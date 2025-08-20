@@ -41,5 +41,6 @@ stdenv.mkDerivation rec {
     homepage = "https://github.com/Izumi-visualizer/izumi_tui/";
     license = licenses.gpl3Plus;
     platforms = platforms.all;
+    mainProgram = "izumi";
   };
 }
