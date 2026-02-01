@@ -23,6 +23,7 @@
 #include "interact.h"
 #include "window.h"
 #include "command_tree.h"
+#include "error.h"
 
 bool parse_input(ApplicationData *app_data, int ch) {
     if (app_data->mode == NORMAL) {
@@ -109,7 +110,7 @@ bool parse_input(ApplicationData *app_data, int ch) {
                 }
                 app_data->command = malloc(5*sizeof(char));
                 strcpy(app_data->command, "next");
-                run_command(app_data);
+                app_data->error = run_command(app_data);
                 break;
             case 'N':
                 if (app_data->command != NULL) {
@@ -117,7 +118,7 @@ bool parse_input(ApplicationData *app_data, int ch) {
                 }
                 app_data->command = malloc(5*sizeof(char));
                 strcpy(app_data->command, "prev");
-                run_command(app_data);
+                app_data->error = run_command(app_data);
                 break;
 
             default:
@@ -151,7 +152,7 @@ bool parse_input(ApplicationData *app_data, int ch) {
                 app_data->mode = NORMAL;
                 break;
             case '\n': // Enter
-                run_command(app_data);
+                app_data->error = run_command(app_data);
                 app_data->mode = NORMAL;
                 break;
             case KEY_BACKSPACE: // Backspace

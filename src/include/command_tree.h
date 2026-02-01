@@ -22,8 +22,9 @@
 #include <stdio.h>
 
 #include "window.h"
+#include "error.h"
 
-bool run_command(ApplicationData *app_data);
+ErrorKind run_command(ApplicationData *app_data);
 
 struct Command_s;
 typedef struct Command_s Command;

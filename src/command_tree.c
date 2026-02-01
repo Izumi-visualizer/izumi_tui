@@ -20,6 +20,7 @@
 
 #include "command_tree.h"
 #include "commands.h"
+#include "error.h"
 
 int command_arg_count(const char * command) {
     int argc = 0;
@@ -87,12 +88,12 @@ bool traverse_command_tree(ApplicationData *app_data, const Command commands[], 
     return false;
 }
 
-bool run_command(ApplicationData *app_data) {
+ErrorKind run_command(ApplicationData *app_data) {
     char command[strlen(app_data->command) + 1];
     strcpy(command, app_data->command);
 
     int argc = command_arg_count(command);
-    if (argc == -1) return false; // Empty command
+    if (argc == -1) return ERROR_EMPTY_COMMAND; // Empty command
 
     char * argv[argc+1]; // Contains the command, we later get rid of it
     split_command_arguments(command, argc, argv);
@@ -100,5 +101,9 @@ bool run_command(ApplicationData *app_data) {
     const char * command_name = argv[0];
     const char ** command_argv = (const char **) argv + 1; // argv won't be modified from this point on
     
-    return traverse_command_tree(app_data, COMMANDS, sizeof(COMMANDS) / sizeof(COMMANDS[0]), command_name, argc, command_argv);
+    // TODO: temporal code until add all errors
+    if (traverse_command_tree(app_data, COMMANDS, sizeof(COMMANDS) / sizeof(COMMANDS[0]), command_name, argc, command_argv))
+        return NO_ERROR;
+    else
+        return ERROR_ON_EXE;
 }
