@@ -1,5 +1,5 @@
 /*
- * This file is part of Izumi.
+ * This file is par of Izumi.
  *
  * Izumi is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
@@ -28,6 +28,7 @@
 #include "config.h"
 #include "interact.h"
 #include "configure.h"
+#include "error.h"
 
 void get_window_data(WindowData *win_data, ApplicationData *app_data) {
     win_data->width = getmaxx(stdscr);
@@ -148,6 +149,8 @@ void init_application(ApplicationData *app_data) {
     set_color(app_data, COLOR_STAGES + 3, COLOR_YELLOW, COLOR_BLACK, true);
     set_color(app_data, COLOR_STAGES + 4, COLOR_MAGENTA, COLOR_BLACK, true);
     set_color(app_data, COLOR_STAGES + 5, COLOR_CYAN, COLOR_BLACK, true);
+    set_color(app_data, COLOR_ERROR_STATUS, COLOR_RED, COLOR_BLACK, true);
+    set_color(app_data, COLOR_ERROR_TEXT, COLOR_BLACK, COLOR_RED, true);
 
     apply_colors(app_data);
 
@@ -164,6 +167,8 @@ void init_application(ApplicationData *app_data) {
     app_data->config.stage_width = 3;
 
     app_data->quit_requested = false;
+
+    app_data->error = NO_ERROR;
 
     execute_config_commands(app_data, read_config_file(get_config_path()));
 }
@@ -341,6 +346,15 @@ void render_status_bar(ApplicationData *app_data) {
         enable_colors_app(app_data, COLOR_COMMANDS);
         mvprintw(getmaxy(stdscr)-1, 11, ":%s", app_data->command);
         disable_colors_app(app_data, COLOR_COMMANDS);
+    }
+
+    if (app_data->error != NO_ERROR) {
+        enable_colors_app(app_data, COLOR_ERROR_TEXT);
+        mvprintw(getmaxy(stdscr)-1, strlen(mode) + 4, "%s", error_msg[app_data->error]);
+        disable_colors_app(app_data, COLOR_ERROR_TEXT);
+        
+
+        app_data->error = NO_ERROR;
     }
 
 }

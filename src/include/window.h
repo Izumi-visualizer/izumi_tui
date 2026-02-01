@@ -24,6 +24,8 @@
 #include <unistd.h>
 #include <stdint.h>
 
+#include "error.h"
+
 #include <izumi/data_structs.h>
 
 struct ColorData_s {
@@ -34,12 +36,23 @@ struct ColorData_s {
 
 typedef struct ColorData_s ColorData;
 
-#define COLORS_AMOUNT 10
-#define COLOR_COMMANDS 0
-#define COLOR_BOX 1
-#define COLOR_TEXT 2
-#define COLOR_STATUS 3
-#define COLOR_STAGES 4
+enum Color_e {
+    COLOR_COMMANDS = 0,
+    COLOR_BOX,
+    COLOR_TEXT,
+    COLOR_STATUS,
+    COLOR_STAGES,
+    COLOR_STAGES_2,
+    COLOR_STAGES_3,
+    COLOR_STAGES_4,
+    COLOR_STAGES_5,
+    COLOR_STAGES_6,
+    COLOR_ERROR_STATUS,
+    COLOR_ERROR_TEXT,
+    COLORS_AMOUNT
+};
+
+typedef enum Color_e Color;
 
 struct Configuration_s {
     uint64_t bar_offset;
@@ -100,6 +113,8 @@ struct ApplicationData_s {
     bool windows_synced;
 
     bool quit_requested;
+
+    ErrorKind error;
 };
 
 typedef struct ApplicationData_s ApplicationData;
