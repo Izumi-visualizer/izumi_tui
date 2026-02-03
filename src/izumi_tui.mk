@@ -14,4 +14,5 @@ izumi_headers = \
     include/files.h \
     include/interact.h \
     include/system_curses.h \
+    include/error.h \
     include/window.h
