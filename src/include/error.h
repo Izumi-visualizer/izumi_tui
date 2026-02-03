@@ -21,7 +21,14 @@
 enum ErrorKind_e {
     ERORR_WRONG_COMMAND = 0,
     ERROR_EMPTY_COMMAND,
+    ERROR_WRONG_AMOUNT_ARGS,
+    ERROR_WRONG_ARGS,
+    ERROR_SUBCOMMAND_EMPTY,
     ERROR_ON_EXE,
+    ERROR_FILE_NOT_EXISTS,
+    ERROR_NOT_A_FILE,
+    ERROR_NO_WINDOW,
+    ERROR_NO_RESULT,
 
     ERRORS_AMOUNT,
     NO_ERROR
@@ -32,7 +39,14 @@ typedef enum ErrorKind_e ErrorKind;
 static char *error_msg[ERRORS_AMOUNT] = {
     "Wrong command",
     "Empty command",
+    "Wrong ammount of arguments on the command",
+    "Wrong arguments on the command",
+    "Command with subcommands empty",
     "Error on execution of command",
+    "File does not exist",
+    "File is not a file",
+    "No window created",
+    "No result on the search",
 };
 
 #endif
