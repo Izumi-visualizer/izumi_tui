@@ -39,7 +39,7 @@ enum CommandType_e {
 
 typedef enum CommandType_e CommandType;
 
-typedef bool(CommandArglistCallback)(ApplicationData *app_data, int argc, const char * argv[]);
+typedef ErrorKind(CommandArglistCallback)(ApplicationData *app_data, int argc, const char * argv[]);
 
 struct CommandArglist_s {
     CommandArglistCallback * callback;
@@ -47,7 +47,7 @@ struct CommandArglist_s {
 
 typedef struct CommandArglist_s CommandArglist;
 
-typedef bool(CommandFixedArglistCallback)(ApplicationData *app_data, const char * argv[]);
+typedef ErrorKind(CommandFixedArglistCallback)(ApplicationData *app_data, const char * argv[]);
 
 struct CommandFixedArglist_s {
     int argc;
@@ -56,7 +56,7 @@ struct CommandFixedArglist_s {
 
 typedef struct CommandFixedArglist_s CommandFixedArglist;
 
-typedef bool(CommandNoArgsCallback)(ApplicationData *app_data);
+typedef ErrorKind(CommandNoArgsCallback)(ApplicationData *app_data);
 
 struct CommandNoArgs_s {
     CommandNoArgsCallback * callback;

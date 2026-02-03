@@ -62,7 +62,7 @@ void split_command_arguments(char * command, int argc, char * argv[]) {
     }
 }
 
-bool traverse_command_tree(ApplicationData *app_data, const Command commands[], size_t commands_length, const char * command_name, int argc, const char * argv[]) {
+ErrorKind traverse_command_tree(ApplicationData *app_data, const Command commands[], size_t commands_length, const char * command_name, int argc, const char * argv[]) {
     for (unsigned int i = 0; i < commands_length; ++i) {
         if (strcmp(command_name, commands[i].cmd) != 0) continue;
         const Command * const command = commands + i;
@@ -74,10 +74,10 @@ bool traverse_command_tree(ApplicationData *app_data, const Command commands[], 
             if (argc != command->fixed_arglist.argc) return false;
             return command->fixed_arglist.callback(app_data, argv);
         case COMMAND_TYPE_NO_ARGS:
-            if (argc != 0) return false;
+            if (argc != 0) return ERROR_WRONG_AMOUNT_ARGS;
             return command->no_args.callback(app_data);
         case COMMAND_TYPE_SUBCOMMAND:
-            if (argc == 0) return false;
+            if (argc == 0) return ERROR_SUBCOMMAND_EMPTY;
             return traverse_command_tree(app_data, command->subcommand.subcommands, command->subcommand.subcommands_length, argv[0], argc - 1, argv + 1);
         case COMMAND_TYPE_ALIAS:
             return traverse_command_tree(app_data, command + 1, commands_length - i - 1, command->alias.real_cmd, argc, argv);
@@ -85,7 +85,7 @@ bool traverse_command_tree(ApplicationData *app_data, const Command commands[], 
     }
     
     // If we arrive here, nothing has matched
-    return false;
+    return ERORR_WRONG_COMMAND;
 }
 
 ErrorKind run_command(ApplicationData *app_data) {
@@ -101,9 +101,5 @@ ErrorKind run_command(ApplicationData *app_data) {
     const char * command_name = argv[0];
     const char ** command_argv = (const char **) argv + 1; // argv won't be modified from this point on
     
-    // TODO: temporal code until add all errors
-    if (traverse_command_tree(app_data, COMMANDS, sizeof(COMMANDS) / sizeof(COMMANDS[0]), command_name, argc, command_argv))
-        return NO_ERROR;
-    else
-        return ERROR_ON_EXE;
+    return traverse_command_tree(app_data, COMMANDS, sizeof(COMMANDS) / sizeof(COMMANDS[0]), command_name, argc, command_argv);
 }
