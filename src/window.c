@@ -151,6 +151,8 @@ void init_application(ApplicationData *app_data) {
     set_color(app_data, COLOR_STAGES + 5, COLOR_CYAN, COLOR_BLACK, true);
     set_color(app_data, COLOR_ERROR_STATUS, COLOR_RED, COLOR_BLACK, true);
     set_color(app_data, COLOR_ERROR_TEXT, COLOR_BLACK, COLOR_RED, true);
+    set_color(app_data, COLOR_TIMELINE, COLOR_BLACK, COLOR_YELLOW, false);
+    set_color(app_data, COLOR_TIMELINE_SELECTED, COLOR_BLACK, COLOR_YELLOW, true);
 
     apply_colors(app_data);
 
@@ -191,9 +193,9 @@ void print_instruction(ApplicationData *app_data, WindowData *win_data, Configur
     }
 
 
-    for (uint64_t i = config->bar_offset + 1; i < win_data->width; i += config->stage_width + 1) {
+    for (uint64_t i = config->bar_offset; i < win_data->width; i += config->stage_width + 1) {
         for (uint64_t j = 0; j < 2; ++j) {
-            mvwprintw(win_data->win, y+j, i, "|");
+            mvwaddch(win_data->win, y+j, i, ACS_VLINE);
         }
     }
 
@@ -207,8 +209,6 @@ void print_instruction(ApplicationData *app_data, WindowData *win_data, Configur
         }
     }
 
-    mvwprintw(win_data->win, y,   config->bar_offset, "|");
-    mvwprintw(win_data->win, y+1, config->bar_offset, "|");
     disable_colors_win(app_data, win_data, COLOR_TEXT);
 
     if (inst != NULL && inst->valid && inst->stages != NULL) {
@@ -219,7 +219,7 @@ void print_instruction(ApplicationData *app_data, WindowData *win_data, Configur
                 *first_cycle = stage->cycle;
             }
 
-            uint64_t stage_offset = config->bar_offset + 2 + (config->stage_width + 1)*(stage->cycle - *first_cycle);
+            uint64_t stage_offset = config->bar_offset + 1 + (config->stage_width + 1)*(stage->cycle - *first_cycle);
 
             enable_colors_win(app_data, win_data, COLOR_STAGES + i%6);
 
