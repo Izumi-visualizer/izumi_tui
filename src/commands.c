@@ -265,3 +265,45 @@ ErrorKind quit_cb(ApplicationData *app_data) {
     app_data->quit_requested = true;
     return NO_ERROR;
 }
+
+ErrorKind createtimeline_cb(ApplicationData *app_data, const int argc, const char *argv[]) {
+    // createtimeline [cycle]
+    if (argc > 1) return ERROR_WRONG_AMOUNT_ARGS;
+
+    if (app_data->windows == NULL) return ERROR_NO_WINDOW;
+
+    WindowData *win_data = app_data->windows[app_data->window_focused];
+
+    uint64_t cycle = win_data->first_cycle;
+
+    win_data->timelines_amount++;
+    win_data->timelines = realloc(win_data->timelines, win_data->timelines_amount*sizeof(uint64_t));
+
+    win_data->timelines[win_data->timelines_amount - 1] = cycle;
+
+    // Order timelines
+    for (uint64_t i = 0; i < win_data->timelines_amount - 1; i++) {
+        for (uint64_t j = 0; j < win_data->timelines_amount - 1 - i; j++) {
+            if (win_data->timelines[j] > win_data->timelines[j + 1]) {
+                uint64_t temp = win_data->timelines[j];
+                win_data->timelines[j] = win_data->timelines[j + 1];
+                win_data->timelines[j + 1] = temp;
+            }
+        }
+    }
+
+    return NO_ERROR;
+}
+
+
+ErrorKind removetimeline_cb(ApplicationData *app_data, const int argc, const char *argv[]) {
+    return NO_ERROR;
+}
+
+ErrorKind movetimeline_cb(ApplicationData *app_data, const int argc, const char *argv[]) {
+    return NO_ERROR;
+}
+
+ErrorKind togglemovetimeline_cb(ApplicationData *app_data, const int argc, const char *argv[]) {
+    return NO_ERROR;
+}
