@@ -40,6 +40,7 @@ enum Color_e {
     COLOR_COMMANDS = 0,
     COLOR_BOX,
     COLOR_TEXT,
+    COLOR_TEXT_BOLD,
     COLOR_STATUS,
     COLOR_STAGES,
     COLOR_STAGES_2,
@@ -92,10 +93,14 @@ struct WindowData_s {
     InstructionTableArray *tables_array;
 
     uint64_t first_instruction;
+    uint64_t first_cycle;
 
     char *filename;
 
     SearchData last_search; // used for next appearance of searched element
+    
+    uint64_t timelines_amount;
+    uint64_t *timelines;
 };
 
 typedef struct WindowData_s WindowData;

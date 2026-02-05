@@ -52,6 +52,7 @@ void new_window(ApplicationData *app_data) {
 
     win_data->filename = NULL;
     win_data->first_instruction = 0;
+    win_data->first_cycle = 0;
 
     win_data->tables_array = malloc(sizeof(InstructionTableArray));
     win_data->tables_array->qtty_tables = 0;
@@ -60,6 +61,9 @@ void new_window(ApplicationData *app_data) {
 
     win_data->last_search.pattern = NULL;
     win_data->last_search.data_kind = PC;
+
+    win_data->timelines_amount = 0;
+    win_data->timelines = NULL;
 
     app_data->window_focused = app_data->windows_qtty - 1;
 }
@@ -142,6 +146,7 @@ void init_application(ApplicationData *app_data) {
     set_color(app_data, COLOR_COMMANDS, COLOR_BLACK, COLOR_WHITE, false);
     set_color(app_data, COLOR_BOX, COLOR_BLACK, COLOR_WHITE, false);
     set_color(app_data, COLOR_TEXT, COLOR_BLACK, COLOR_WHITE, false);
+    set_color(app_data, COLOR_TEXT_BOLD, COLOR_BLACK, COLOR_WHITE, true);
     set_color(app_data, COLOR_STATUS, COLOR_BLUE, COLOR_BLACK, true);
     set_color(app_data, COLOR_STAGES + 0, COLOR_BLUE, COLOR_BLACK, true);
     set_color(app_data, COLOR_STAGES + 1, COLOR_RED, COLOR_BLACK, true);
@@ -152,7 +157,7 @@ void init_application(ApplicationData *app_data) {
     set_color(app_data, COLOR_ERROR_STATUS, COLOR_RED, COLOR_BLACK, true);
     set_color(app_data, COLOR_ERROR_TEXT, COLOR_BLACK, COLOR_RED, true);
     set_color(app_data, COLOR_TIMELINE, COLOR_BLACK, COLOR_YELLOW, false);
-    set_color(app_data, COLOR_TIMELINE_SELECTED, COLOR_BLACK, COLOR_YELLOW, true);
+    set_color(app_data, COLOR_TIMELINE_SELECTED, COLOR_YELLOW, COLOR_BLACK, false);
 
     apply_colors(app_data);
 
@@ -267,10 +272,16 @@ void render_window(ApplicationData *app_data, WindowData *win_data) {
     wresize(win_data->win, win_data->height, win_data->width);
     mvwin(win_data->win, win_data->y, win_data->x);
 
-    uint64_t cycle = UINT64_MAX;
+    win_data->first_cycle = UINT64_MAX;
 
     if (win_data->tables_array != NULL) {
-        for (uint64_t i = 0; i < (win_data->height-1)/2; ++i) {
+        uint64_t amount_of_insts = (win_data->height - 1)/2;
+        
+        if (win_data->timelines_amount != 0) {
+            amount_of_insts = (win_data->height - 1 - 1 - win_data->timelines_amount)/2;
+        }
+
+        for (uint64_t i = 0; i < amount_of_insts; ++i) {
             Instruction *inst = NULL;
 
             uint64_t index = win_data->first_instruction + i;
@@ -281,8 +292,18 @@ void render_window(ApplicationData *app_data, WindowData *win_data) {
                 }
             }
 
-            print_instruction(app_data, win_data, &app_data->config, inst, i*2+1, &cycle, index);
+            print_instruction(app_data, win_data, &app_data->config, inst, i*2+1, &win_data->first_cycle, index);
         }
+    }
+
+    if (win_data->timelines_amount != 0) {
+        for (uint64_t i = 1; i < win_data->width - 1; ++i) {
+            mvwaddch(win_data->win, win_data->height - 2 - win_data->timelines_amount, i, ACS_HLINE);
+        }
+    }
+
+    for (uint64_t i = 1; i < win_data->height - 1; ++i) {
+        mvwaddch(win_data->win, i, app_data->config.bar_offset, ACS_VLINE);
     }
 
     enable_colors_win(app_data, win_data, COLOR_BOX);
@@ -301,6 +322,52 @@ void render_window(ApplicationData *app_data, WindowData *win_data) {
     }
 
     disable_colors_win(app_data, win_data, COLOR_BOX);
+    
+    uint64_t init_line_timelines = win_data->height - 1 - win_data->timelines_amount;
+
+    for (uint64_t i = 0; i < win_data->timelines_amount; ++i) {
+        uint64_t cycle_timeline = win_data->timelines[i];
+
+        mvwprintw(win_data->win, init_line_timelines + i, 1, "Timeline %lu at cycle %lu", i, cycle_timeline);
+
+        if ((cycle_timeline >= win_data->first_cycle) && 
+            ((cycle_timeline <= win_data->first_cycle + (win_data->width - app_data->config.bar_offset - 1)/(app_data->config.stage_width + 1)))) {
+            enable_colors_win(app_data, win_data, COLOR_TIMELINE_SELECTED);
+
+            uint64_t bar_pos = app_data->config.bar_offset + 1 + (cycle_timeline - win_data->first_cycle)*(app_data->config.stage_width+1) + (app_data->config.stage_width)/2;
+    
+            for (uint64_t j = 1; j < init_line_timelines + i + 1; ++j) {
+                mvwaddch(win_data->win, j, bar_pos, ACS_VLINE);
+            }
+
+            for (uint64_t j = app_data->config.bar_offset + 1; j < bar_pos; j++) {
+                mvwaddch(win_data->win, init_line_timelines + i, j, ACS_HLINE);
+            }
+            
+            mvwaddch(win_data->win, init_line_timelines + i, bar_pos, ACS_LRCORNER);
+            
+            disable_colors_win(app_data, win_data, COLOR_TIMELINE_SELECTED);
+        }
+
+    }
+
+    enable_colors_win(app_data, win_data, COLOR_TEXT_BOLD);
+    mvwprintw(win_data->win, 0, app_data->config.bar_offset + 1, "v %lu", win_data->first_cycle);
+
+    uint64_t last_cycle = win_data->first_cycle + ((win_data->width - 2 - app_data->config.bar_offset)/(app_data->config.stage_width + 1));
+
+    uint64_t start_text = 2;
+
+    uint64_t num = last_cycle;
+
+    while (num != 0) {
+        start_text++;
+        num /= 10;
+    }
+
+    mvwprintw(win_data->win, 0, win_data->width - start_text - 1, "%lu v", last_cycle);
+
+    disable_colors_win(app_data, win_data, COLOR_TEXT_BOLD);
 
     wrefresh(win_data->win);
 }
