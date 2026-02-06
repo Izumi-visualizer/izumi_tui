@@ -5,7 +5,8 @@ izumi_c_sources = \
     files.c \
     interact.c \
     main.c \
-    window.c
+    window.c \
+		utils.c
 
 izumi_headers = \
     include/command_tree.h \
@@ -15,4 +16,5 @@ izumi_headers = \
     include/interact.h \
     include/system_curses.h \
     include/error.h \
-    include/window.h
+    include/window.h \
+		include/utils.h

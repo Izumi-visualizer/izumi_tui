@@ -42,9 +42,8 @@ CommandNoArgsCallback next_cb;
 CommandNoArgsCallback prev_cb;
 CommandNoArgsCallback quit_cb;
 CommandArglistCallback createtimeline_cb;
-CommandArglistCallback removetimeline_cb;
-CommandArglistCallback movetimeline_cb;
-CommandArglistCallback togglemovetimeline_cb;
+CommandFixedArglistCallback removetimeline_cb;
+CommandFixedArglistCallback movetimeline_cb;
 
 const Command COMMANDS[] = {
     CMD_ALIAS("n", "newpanel"),
@@ -68,11 +67,9 @@ const Command COMMANDS[] = {
     CMD_ALIAS("ctime", "createtimeline"),
     CMD_ARGLIST("createtimeline", createtimeline_cb),
     CMD_ALIAS("rmtime", "removetimeline"),
-    CMD_ARGLIST("removetimeline", removetimeline_cb),
+    CMD_FIXED_ARGLIST("removetimeline", 1, removetimeline_cb),
     CMD_ALIAS("mvtime", "movetimeline"),
-    CMD_ARGLIST("movetimeline", movetimeline_cb),
-    CMD_ALIAS("tmvtime", "togglemovetimeline"),
-    CMD_ARGLIST("togglemovetimeline", togglemovetimeline_cb),
+    CMD_FIXED_ARGLIST("movetimeline", 2, movetimeline_cb),
 };
 
 #endif

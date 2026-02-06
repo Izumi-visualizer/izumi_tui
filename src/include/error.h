@@ -29,6 +29,7 @@ enum ErrorKind_e {
     ERROR_NOT_A_FILE,
     ERROR_NO_WINDOW,
     ERROR_NO_RESULT,
+    ERROR_IDX_BIGGER,
 
     ERRORS_AMOUNT,
     NO_ERROR
@@ -47,6 +48,7 @@ static char *error_msg[ERRORS_AMOUNT] = {
     "File is not a file",
     "No window created",
     "No result on the search",
+    "Index is bigger than array",
 };
 
 #endif
