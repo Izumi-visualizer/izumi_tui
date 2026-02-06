@@ -130,18 +130,15 @@ bool set_cb(ApplicationData *app_data, const int argc, const char *argv[]) {
         }
 
         int color_idx = 0;
+        uint64_t i;
+        for (i = 0; i < COLORS_AMOUNT; i++) {
+            if (strcmp(element, colors_names[i]) == 0) {
+                color_idx = i;
+                break;
+            }
+        }
 
-        if (strcmp(element, "commands")      == 0) color_idx = COLOR_COMMANDS;
-        else if (strcmp(element, "box")      == 0) color_idx = COLOR_BOX;
-        else if (strcmp(element, "text")     == 0) color_idx = COLOR_TEXT;
-        else if (strcmp(element, "status")   == 0) color_idx = COLOR_STATUS;
-        else if (strcmp(element, "stage1")   == 0) color_idx = COLOR_STAGES + 0;
-        else if (strcmp(element, "stage2")   == 0) color_idx = COLOR_STAGES + 1;
-        else if (strcmp(element, "stage3")   == 0) color_idx = COLOR_STAGES + 2;
-        else if (strcmp(element, "stage4")   == 0) color_idx = COLOR_STAGES + 3;
-        else if (strcmp(element, "stage5")   == 0) color_idx = COLOR_STAGES + 4;
-        else if (strcmp(element, "stage6")   == 0) color_idx = COLOR_STAGES + 5;
-        else return ERROR_WRONG_ARGS;
+        if (i == COLORS_AMOUNT) return ERROR_WRONG_ARGS;
 
         short set_fg = COLOR_BLACK;
 

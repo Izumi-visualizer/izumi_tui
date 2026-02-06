@@ -105,12 +105,14 @@ make run ARGS=path/to/file
 > - `commands` Sets the color of the commands shown on the bottom of the screen when typing one
 > - `box` Sets the color of the box around the window
 > - `status` Sets the color of the status of the application at the bar on the bottom of the screen
-> - `stage1` Sets the color of the first stage of the pipeline
-> - `stage2` Sets the color of the second stage of the pipeline
-> - `stage3` Sets the color of the third stage of the pipeline
-> - `stage4` Sets the color of the fourth stage of the pipeline
-> - `stage5` Sets the color of the fifth stage of the pipeline
-> - `stage6` Sets the color of the sixth stage of the pipeline
+> - `error_text` Sets the color of the text shown on errors
+> - `timeline` Sets the color of the timelines generated
+> - `stage_1` Sets the color of the first stage of the pipeline
+> - `stage_2` Sets the color of the second stage of the pipeline
+> - `stage_3` Sets the color of the third stage of the pipeline
+> - `stage_4` Sets the color of the fourth stage of the pipeline
+> - `stage_5` Sets the color of the fifth stage of the pipeline
+> - `stage_6` Sets the color of the sixth stage of the pipeline
 > If there are more than six stages, the color of the seventh and following stages will return to the color of the first stage and repeat the cycle.
 >
 > It requires the color to be one of the list:

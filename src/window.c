@@ -154,10 +154,8 @@ void init_application(ApplicationData *app_data) {
     set_color(app_data, COLOR_STAGES + 3, COLOR_YELLOW, COLOR_BLACK, true);
     set_color(app_data, COLOR_STAGES + 4, COLOR_MAGENTA, COLOR_BLACK, true);
     set_color(app_data, COLOR_STAGES + 5, COLOR_CYAN, COLOR_BLACK, true);
-    set_color(app_data, COLOR_ERROR_STATUS, COLOR_RED, COLOR_BLACK, true);
     set_color(app_data, COLOR_ERROR_TEXT, COLOR_BLACK, COLOR_RED, true);
-    set_color(app_data, COLOR_TIMELINE, COLOR_BLACK, COLOR_YELLOW, false);
-    set_color(app_data, COLOR_TIMELINE_SELECTED, COLOR_YELLOW, COLOR_BLACK, false);
+    set_color(app_data, COLOR_TIMELINE, COLOR_YELLOW, COLOR_BLACK, false);
 
     apply_colors(app_data);
 
@@ -332,7 +330,7 @@ void render_window(ApplicationData *app_data, WindowData *win_data) {
 
         if ((cycle_timeline >= win_data->first_cycle) && 
             ((cycle_timeline <= win_data->first_cycle + (win_data->width - app_data->config.bar_offset - 1)/(app_data->config.stage_width + 1)))) {
-            enable_colors_win(app_data, win_data, COLOR_TIMELINE_SELECTED);
+            enable_colors_win(app_data, win_data, COLOR_TIMELINE);
 
             uint64_t bar_pos = app_data->config.bar_offset + 1 + (cycle_timeline - win_data->first_cycle)*(app_data->config.stage_width+1) + (app_data->config.stage_width)/2;
     
@@ -346,7 +344,7 @@ void render_window(ApplicationData *app_data, WindowData *win_data) {
             
             mvwaddch(win_data->win, init_line_timelines + i, bar_pos, ACS_LRCORNER);
             
-            disable_colors_win(app_data, win_data, COLOR_TIMELINE_SELECTED);
+            disable_colors_win(app_data, win_data, COLOR_TIMELINE);
         }
 
     }

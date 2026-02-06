@@ -48,11 +48,25 @@ enum Color_e {
     COLOR_STAGES_4,
     COLOR_STAGES_5,
     COLOR_STAGES_6,
-    COLOR_ERROR_STATUS,
     COLOR_ERROR_TEXT,
     COLOR_TIMELINE,
-    COLOR_TIMELINE_SELECTED,
     COLORS_AMOUNT
+};
+
+static char *colors_names[COLORS_AMOUNT] = {
+    "commands",
+    "box",
+    "text",
+    "text_bold",
+    "status",
+    "stage_1",
+    "stage_2",
+    "stage_3",
+    "stage_4",
+    "stage_5",
+    "stage_6",
+    "error_text",
+    "timeline"
 };
 
 typedef enum Color_e Color;
