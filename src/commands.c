@@ -28,6 +28,7 @@
 
 #include "files.h"
 #include "window.h"
+#include "utils.h"
 
 ErrorKind newpanel_cb(ApplicationData *app_data) {
     new_window(app_data);
@@ -38,7 +39,7 @@ ErrorKind closepanel_cb(ApplicationData *app_data, const int argc, const char * 
     uint64_t panel_id;
 
     if (argc == 1) {
-        panel_id = atoi(argv[0]);
+        if (!parse_u64(argv[0], &panel_id)) return ERROR_WRONG_ARGS;
     }
     else {
         panel_id = app_data->window_focused;
@@ -102,12 +103,13 @@ bool set_cb(ApplicationData *app_data, const int argc, const char *argv[]) {
     if (strcmp(config, "bar_offset") == 0) { // :set bar_offset (number)
         if (argc != 2) return ERROR_WRONG_AMOUNT_ARGS;
         const char *value = argv[1];
-        app_data->config.bar_offset = atoi(value);
+
+        if (!parse_u64(value, &app_data->config.bar_offset)) return ERROR_WRONG_ARGS;
     }
     else if (strcmp(config, "stage_width") == 0) { // :set stage_width (number)
         if (argc != 2) return ERROR_WRONG_AMOUNT_ARGS;
         const char* value = argv[1];
-        app_data->config.stage_width = atoi(value);
+        if (!parse_u64(value, &app_data->config.stage_width)) return ERROR_WRONG_ARGS;
     }
     else if (strcmp(config, "color") == 0) { // :set color (element) blue|red|yellow|green|white|black|cyan|magenta blue|red|yellow|green|white|black|cyan|magenta <bold>
         if (argc != 4 && argc != 5) return ERROR_WRONG_AMOUNT_ARGS;
@@ -276,6 +278,10 @@ ErrorKind createtimeline_cb(ApplicationData *app_data, const int argc, const cha
 
     uint64_t cycle = win_data->first_cycle;
 
+    if (argc == 1) {
+        if (!parse_u64(argv[0], &cycle)) return ERROR_WRONG_ARGS;
+    }
+
     win_data->timelines_amount++;
     win_data->timelines = realloc(win_data->timelines, win_data->timelines_amount*sizeof(uint64_t));
 
@@ -296,14 +302,58 @@ ErrorKind createtimeline_cb(ApplicationData *app_data, const int argc, const cha
 }
 
 
-ErrorKind removetimeline_cb(ApplicationData *app_data, const int argc, const char *argv[]) {
+ErrorKind removetimeline_cb(ApplicationData *app_data, const char *argv[]) {
+    if (app_data->windows == NULL) return ERROR_NO_WINDOW;
+    WindowData *win_data = app_data->windows[app_data->window_focused];
+
+    uint64_t timeline_idx;
+    if (!parse_u64(argv[0], &timeline_idx)) return ERROR_WRONG_ARGS;
+
+    if ((timeline_idx > win_data->timelines_amount - 1) || (win_data->timelines_amount == 0)) return ERROR_IDX_BIGGER;
+
+    uint64_t *new_timelines = malloc((win_data->timelines_amount - 1)*sizeof(uint64_t));
+
+    for (uint64_t i = 0; i < timeline_idx; i++) {
+        new_timelines[i] = win_data->timelines[i];
+    }
+
+    for (uint64_t i = timeline_idx + 1; i < win_data->timelines_amount - 1; i++) {
+        new_timelines[i-1] = win_data->timelines[i];
+    }
+    win_data->timelines_amount--;
+
+    free(win_data->timelines);
+    win_data->timelines = new_timelines;
+
     return NO_ERROR;
 }
 
-ErrorKind movetimeline_cb(ApplicationData *app_data, const int argc, const char *argv[]) {
+ErrorKind movetimeline_cb(ApplicationData *app_data, const char *argv[]) {
+    if (app_data->windows == NULL) return ERROR_NO_WINDOW;
+
+    WindowData *win_data = app_data->windows[app_data->window_focused];
+
+    uint64_t timeline_idx;
+    if (!parse_u64(argv[0], &timeline_idx)) return ERROR_WRONG_ARGS;
+
+    if ((timeline_idx > win_data->timelines_amount - 1) || (win_data->timelines_amount == 0)) return ERROR_IDX_BIGGER;
+
+    uint64_t new_cycle;
+    if (!parse_u64(argv[1], &new_cycle)) return ERROR_WRONG_ARGS;
+
+    win_data->timelines[timeline_idx] = new_cycle;
+    
+    // Order timelines
+    for (uint64_t i = 0; i < win_data->timelines_amount - 1; i++) {
+        for (uint64_t j = 0; j < win_data->timelines_amount - 1 - i; j++) {
+            if (win_data->timelines[j] > win_data->timelines[j + 1]) {
+                uint64_t temp = win_data->timelines[j];
+                win_data->timelines[j] = win_data->timelines[j + 1];
+                win_data->timelines[j + 1] = temp;
+            }
+        }
+    }
+
     return NO_ERROR;
 }
 
-ErrorKind togglemovetimeline_cb(ApplicationData *app_data, const int argc, const char *argv[]) {
-    return NO_ERROR;
-}
