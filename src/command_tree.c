@@ -103,3 +103,15 @@ ErrorKind run_command(ApplicationData *app_data) {
     
     return traverse_command_tree(app_data, COMMANDS, sizeof(COMMANDS) / sizeof(COMMANDS[0]), command_name, argc, command_argv);
 }
+
+// Accessors for COMMANDS arrays so other C files can use them without
+// including the command definitions directly.
+const Command *get_root_commands(size_t *len) {
+    if (len) *len = sizeof(COMMANDS) / sizeof(COMMANDS[0]);
+    return COMMANDS;
+}
+
+const Command *get_panel_commands(size_t *len) {
+    if (len) *len = sizeof(PANEL_COMMANDS) / sizeof(PANEL_COMMANDS[0]);
+    return PANEL_COMMANDS;
+}

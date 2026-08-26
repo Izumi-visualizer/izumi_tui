@@ -24,6 +24,7 @@
 #include "window.h"
 #include "command_tree.h"
 #include "error.h"
+#include "autocomplete.h"
 
 bool parse_input(ApplicationData *app_data, int ch) {
     if (app_data->mode == NORMAL) {
@@ -161,6 +162,11 @@ bool parse_input(ApplicationData *app_data, int ch) {
 
                     app_data->command = realloc(app_data->command, sizeof(char) * len);
                     app_data->command[len - 1] = '\0';
+                }
+                break;
+            case '\t': // Tab - accept autocomplete if available
+                if (accept_autocomplete_suggestion(app_data)) {
+                    /* suggestion accepted, do nothing else */
                 }
                 break;
             default:

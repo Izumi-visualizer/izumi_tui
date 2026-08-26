@@ -95,4 +95,9 @@ struct Command_s {
 #define CMD_SUBCOMMAND(cmd, subcommands)       { cmd, COMMAND_TYPE_SUBCOMMAND, { .subcommand = { subcommands, sizeof(subcommands) / sizeof(subcommands[0]) } } }
 #define CMD_ALIAS(cmd, real_cmd)               { cmd, COMMAND_TYPE_ALIAS, { .alias = { real_cmd } } }
 
+// Helpers to access the commands arrays and their lengths from other
+// translation units without including the full commands.h definition.
+const Command *get_root_commands(size_t *len);
+const Command *get_panel_commands(size_t *len);
+
 #endif

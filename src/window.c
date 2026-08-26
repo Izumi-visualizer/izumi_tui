@@ -29,6 +29,7 @@
 #include "interact.h"
 #include "configure.h"
 #include "error.h"
+#include "autocomplete.h"
 
 void get_window_data(WindowData *win_data, ApplicationData *app_data) {
     win_data->width = getmaxx(stdscr);
@@ -410,6 +411,15 @@ void render_status_bar(ApplicationData *app_data) {
     if (app_data->mode == COMMAND) {
         enable_colors_app(app_data, COLOR_COMMANDS);
         mvprintw(getmaxy(stdscr)-1, 11, ":%s", app_data->command);
+        /* show inline suggestion in dim color */
+        char *suggestion = compute_autocomplete_suggestion(app_data);
+        if (suggestion != NULL) {
+            int col = 11 + 1 + strlen(app_data->command); // 11 is where ":" is printed
+            attron(A_DIM);
+            mvprintw(getmaxy(stdscr)-1, col, "%s", suggestion);
+            attroff(A_DIM);
+            free(suggestion);
+        }
         disable_colors_app(app_data, COLOR_COMMANDS);
     }
 
