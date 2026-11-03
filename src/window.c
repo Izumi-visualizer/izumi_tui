@@ -278,8 +278,15 @@ static void print_instruction_rows(ApplicationData *app_data, WindowData *win_da
                 const char *pc = inst->mem_addr ? inst->mem_addr : "";
                 const char *text = inst->instruction ? inst->instruction : "";
                 label = malloc(strlen(pc) + strlen(text) + 64);
-                snprintf(label, strlen(pc) + strlen(text) + 64,
-                         "%lu %s %s", index, pc, text);
+                if (pc[0] != '\0' && text[0] != '\0')
+                    snprintf(label, strlen(pc) + strlen(text) + 64,
+                             "%lu %s %s", index, pc, text);
+                else if (pc[0] != '\0')
+                    snprintf(label, strlen(pc) + strlen(text) + 64,
+                             "%lu %s", index, pc);
+                else
+                    snprintf(label, strlen(pc) + strlen(text) + 64,
+                             "%lu %s", index, text);
             } else {
                 label = malloc(64);
                 snprintf(label, 64, "%lu %s", index, inst->mem_addr ? inst->mem_addr : "");

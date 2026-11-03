@@ -33,6 +33,7 @@ CommandNoArgsCallback newpanel_cb;
 CommandArglistCallback closepanel_cb;
 CommandNoArgsCallback closeallpanels_cb;
 CommandFixedArglistCallback open_cb;
+CommandFixedArglistCallback attach_cb;
 CommandArglistCallback set_cb;
 CommandNoArgsCallback panelsync_cb;
 CommandNoArgsCallback paneldesync_cb;
@@ -55,6 +56,8 @@ const Command COMMANDS[] = {
     CMD_NO_ARGS("closeallpanels", closeallpanels_cb),
     CMD_ALIAS("o", "open"),
     CMD_FIXED_ARGLIST("open", 1, open_cb),
+    CMD_ALIAS("at", "attach"),
+    CMD_FIXED_ARGLIST("attach", 1, attach_cb),
     CMD_SUBCOMMAND("panelcmd", PANEL_COMMANDS),
     CMD_ARGLIST("set", set_cb),
     CMD_NO_ARGS("toggleemptyrows", toggleemptyrows_cb),

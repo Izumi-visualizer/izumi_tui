@@ -28,6 +28,7 @@ enum ErrorKind_e {
     ERROR_FILE_NOT_EXISTS,
     ERROR_NOT_A_FILE,
     ERROR_NO_WINDOW,
+    ERROR_NO_TRACE_OPEN,
     ERROR_NO_RESULT,
     ERROR_IDX_BIGGER,
 
@@ -47,6 +48,7 @@ static char *error_msg[ERRORS_AMOUNT] = {
     "File does not exist",
     "File is not a file",
     "No window created",
+    "No trace open on the focused panel",
     "No result on the search",
     "Index is bigger than array",
 };
