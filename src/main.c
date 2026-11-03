@@ -22,28 +22,52 @@
 #include <sys/types.h>
 #include <linux/limits.h>
 
+#include "config.h"
 #include "window.h"
 #include "files.h"
+
+static void print_help(const char *program) {
+    printf("Usage: %s [OPTION]... [FILE]...\n", program);
+    printf("Open one or more instruction traces in an interactive TUI.\n");
+    printf("\n");
+    printf("  -h, --help     display this help and exit\n");
+    printf("  -v, --version  display version information and exit\n");
+}
 
 int main(int argc, char *argv[]) {
     ApplicationData app_data;
 
+    for (int i = 1; i < argc; ++i) {
+        if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+            print_help(argv[0]);
+            return 0;
+        }
+
+        if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--version") == 0) {
+            printf("izumi %s\n", VERSION);
+            return 0;
+        }
+    }
+
     init_application(&app_data);
 
     if (argc > 1) {
-        for (int i = 0; i < argc - 1; ++i) {
+        int window_index = 0;
+
+        for (int i = 1; i < argc; ++i) {
             new_window(&app_data);
 
-            char *path = realpath(argv[i+1], NULL);
+            char *path = realpath(argv[i], NULL);
 
             FileData file_data = check_file(path);
 
             if (file_data.exists && file_data.is_file) {
-                app_data.windows[i]->filename = read_file(argv[i+1], app_data.windows[i]->tables_array);
+                app_data.windows[window_index]->filename = read_file(argv[i], app_data.windows[window_index]->tables_array);
             }
 
             free(path);
             path = NULL;
+            ++window_index;
         }
     }
 
