@@ -31,82 +31,36 @@ bool parse_input(ApplicationData *app_data, int ch) {
         switch (ch) {
             case 'j':
             case KEY_DOWN:
-                if (!app_data->config.show_empty_rows) {
-                    for (uint64_t i = 0; i < app_data->windows_qtty; ++i)
-                        if (app_data->windows_synced || i == app_data->window_focused)
-                            move_visible_instruction(app_data->windows[i], true,
-                                app_data->number == 0 ? 1 : app_data->number);
-                    break;
-                }
-                if (app_data->windows != NULL) {
-                    if (app_data->windows_synced) {
-                        for (uint64_t i = 0; i < app_data->windows_qtty; i++) {
-                            if (app_data->number == 0) {
-                                app_data->windows[i]->first_instruction++;
-                            }
-                            else {
-                                app_data->windows[i]->first_instruction += app_data->number;
-                            }
-                        }
-                    }
-                    else {
-                        if (app_data->number == 0) {
-                            app_data->windows[app_data->window_focused]->first_instruction++;
-                        }
-                        else {
-                            app_data->windows[app_data->window_focused]->first_instruction += app_data->number;
-                        }
-                    }
-                }
-                break;
             case 'k':
             case KEY_UP:
-                if (!app_data->config.show_empty_rows) {
-                    for (uint64_t i = 0; i < app_data->windows_qtty; ++i)
-                        if (app_data->windows_synced || i == app_data->window_focused)
-                            move_visible_instruction(app_data->windows[i], false,
-                                app_data->number == 0 ? 1 : app_data->number);
-                    break;
+                for (uint64_t i = 0; i < app_data->windows_qtty; ++i) {
+                    if (!app_data->windows_synced && i != app_data->window_focused) continue;
+                    WindowData *win = app_data->windows[i];
+                    bool forward = ch == 'j' || ch == KEY_DOWN;
+                    uint64_t count = app_data->number == 0 ? 1 : app_data->number;
+                    win->first_subrow = 0;
+                    if (!app_data->config.show_empty_rows)
+                        move_visible_instruction(win, forward, count);
+                    else if (forward)
+                        win->first_instruction += count > UINT64_MAX-win->first_instruction ?
+                            UINT64_MAX-win->first_instruction : count;
+                    else
+                        win->first_instruction = count > win->first_instruction ?
+                            0 : win->first_instruction-count;
                 }
-                if (app_data->windows != NULL) {
-                    if (app_data->windows_synced) {
-                        for (uint64_t i = 0; i < app_data->windows_qtty; i++) {
-                            if (app_data->windows[i]->first_instruction > 0) {
-                                if (app_data->number == 0) {
-                                    if (app_data->windows[i]->first_instruction > 0) {
-                                        app_data->windows[i]->first_instruction--;
-                                    }
-                                }
-                                else {
-                                    if (app_data->number <= app_data->windows[i]->first_instruction) {
-                                        app_data->windows[i]->first_instruction -= app_data->number;
-                                    }
-                                    else {
-                                        app_data->windows[i]->first_instruction = 0;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else {
-                        if (app_data->windows[app_data->window_focused]->first_instruction > 0) {
-                            app_data->windows[app_data->window_focused]->first_instruction--;
-
-                            if (app_data->number == 0) {
-                                if (app_data->windows[app_data->window_focused]->first_instruction > 0) {
-                                    app_data->windows[app_data->window_focused]->first_instruction--;
-                                }
-                            }
-                            else {
-                                if (app_data->number <= app_data->windows[app_data->window_focused]->first_instruction) {
-                                    app_data->windows[app_data->window_focused]->first_instruction -= app_data->number;
-                                }
-                                else {
-                                    app_data->windows[app_data->window_focused]->first_instruction = 0;
-                                }
-                            }
-                        }
-                    }
+                break;
+            case 'J':
+            case 'K':
+            case KEY_NPAGE:
+            case KEY_PPAGE:
+                for (uint64_t i = 0; i < app_data->windows_qtty; ++i) {
+                    if (!app_data->windows_synced && i != app_data->window_focused) continue;
+                    WindowData *win = app_data->windows[i];
+                    uint64_t count = app_data->number == 0 ? 1 : app_data->number;
+                    if (ch == KEY_NPAGE || ch == KEY_PPAGE)
+                        count = win->height > 3 ? win->height-3 : 1;
+                    scroll_instruction_rows(win, ch == 'J' || ch == KEY_NPAGE,
+                        count, app_data->config.show_empty_rows);
                 }
                 break;
             case ':':

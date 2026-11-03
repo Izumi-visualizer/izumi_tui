@@ -12,6 +12,7 @@ Izumi is a multi-format instruction pipeline dump TUI visualizer based on [shioy
 
     Only support for file identificator
 - Stage
+- Multiple Kanata lanes in a single trace, displayed as stacked subrows
 - Line on left
 - End of stage (for multiple cycle stages/stalling the pipeline)
 - End of instruction
@@ -151,6 +152,30 @@ no gaps to reveal.
 | `KEY_DOWN` | Move down |
 | `k` | Move up |
 | `KEY_UP` | Move up |
+| `J` / `K` | Scroll down/up by one screen row, including within a tall instruction |
+| `PageDown` / `PageUp` | Scroll down/up by a page of screen rows |
+
+### Multiple lanes
+
+Kanata `S` and `E` records identify their lane with the second argument after
+the instruction ID. Izumi displays all active lanes of an instruction on
+separate stacked subrows, on one shared cycle axis. Lane IDs are shown next to
+the subrows and sorted numerically; gaps in the lane numbers do not reserve
+blank lines. Lane 1 (commonly stalls) is stacked like any other lane.
+
+An instruction with multiple active lanes has one header showing its instruction
+ID, PC and label, followed by `Lane 0`, `Lane 1`, etc. Only lanes with a positive
+duration or an unfinished stage are shown. Single-lane instructions retain the
+existing two-line layout. `:set stage_width <n>` controls stage-name truncation
+as before. Instruction IDs are not renumbered, and `:toggleemptyrows` still
+controls entire empty instruction rows independently.
+
+`j`/`k` navigate by instruction, while `J`/`K` and PageDown/PageUp let you
+reach lower lanes of an instruction taller than the panel. Numeric prefixes
+work with `J`/`K`. Searching or opening a trace resets the within-instruction
+scroll offset. Resizing and timelines clip lane content to the available panel
+area. This feature handles lanes already present in one Kanata file; attaching
+separate trace files to a panel is not supported yet.
 
 ## Screenshot
 

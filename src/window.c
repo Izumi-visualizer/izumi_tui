@@ -53,6 +53,7 @@ void new_window(ApplicationData *app_data) {
 
     win_data->filename = NULL;
     win_data->first_instruction = 0;
+    win_data->first_subrow = 0;
     win_data->first_cycle = 0;
 
     win_data->tables_array = malloc(sizeof(InstructionTableArray));
@@ -65,6 +66,9 @@ void new_window(ApplicationData *app_data) {
 
     win_data->timelines_amount = 0;
     win_data->timelines = NULL;
+
+    win_data->lane_sources_amount = 0;
+    win_data->lane_sources = NULL;
 
     app_data->window_focused = app_data->windows_qtty - 1;
 }
@@ -90,6 +94,8 @@ void close_window(WindowData *win_data) {
         free(win_data->last_search.pattern);
         win_data->last_search.pattern = NULL;
     }
+
+    clear_lane_sources(win_data);
 
     free(win_data);
     win_data = NULL;
@@ -189,79 +195,154 @@ void main_loop(ApplicationData *app_data) {
     }
 }
 
-void print_instruction(ApplicationData *app_data, WindowData *win_data, Configuration *config, Instruction *inst, uint64_t y, uint64_t *first_cycle, uint64_t index) {
+void clear_lane_sources(WindowData *win_data) {
+    for (uint64_t i = 0; i < win_data->lane_sources_amount; ++i)
+        free(win_data->lane_sources[i]);
+    free(win_data->lane_sources);
+    win_data->lane_sources = NULL;
+    win_data->lane_sources_amount = 0;
+}
+
+typedef struct {
+    uint32_t source;
+    uint64_t lane;
+} LaneId;
+
+static int compare_lane(const void *a, const void *b) {
+    const LaneId *x = a, *y = b;
+    if (x->source != y->source) return x->source < y->source ? -1 : 1;
+    return (x->lane > y->lane) - (x->lane < y->lane);
+}
+
+// Only lane/source pairs which have stage records occupy space. Values need
+// not be consecutive or start at zero; sort them, never allocate by max ID.
+static uint64_t instruction_lanes(Instruction *inst, LaneId **lanes) {
+    *lanes = NULL;
+    if (inst == NULL || !inst->valid || inst->stages == NULL || inst->qtty_stages == 0)
+        return 0;
+    *lanes = malloc(inst->qtty_stages * sizeof(LaneId));
+    uint64_t stages = 0;
+    for (uint64_t i = 0; i < inst->qtty_stages; ++i)
+        if (inst->stages[i].open || inst->stages[i].duration > 0) {
+            (*lanes)[stages].source = inst->stages[i].source;
+            (*lanes)[stages].lane = inst->stages[i].lane;
+            ++stages;
+        }
+    if (stages == 0) return 0;
+    qsort(*lanes, stages, sizeof(LaneId), compare_lane);
+    uint64_t count = 1;
+    for (uint64_t i = 1; i < stages; ++i)
+        if ((*lanes)[i].source != (*lanes)[count-1].source ||
+            (*lanes)[i].lane != (*lanes)[count-1].lane)
+            (*lanes)[count++] = (*lanes)[i];
+    return count;
+}
+
+static uint64_t instruction_height(Instruction *inst) {
+    LaneId *lanes;
+    uint64_t count = instruction_lanes(inst, &lanes);
+    free(lanes);
+    return count > 1 ? count + 1 : 2;
+}
+
+static void lane_label(WindowData *win_data, LaneId lane, char *buffer, size_t size) {
+    if (lane.source == 0)
+        snprintf(buffer, size, "  Lane %lu", lane.lane);
+    else if (lane.source <= win_data->lane_sources_amount &&
+             win_data->lane_sources[lane.source-1] != NULL)
+        snprintf(buffer, size, "  %s:%lu",
+                 win_data->lane_sources[lane.source-1], lane.lane);
+    else
+        snprintf(buffer, size, "  src%u:%lu", lane.source, lane.lane);
+}
+
+static void print_instruction_rows(ApplicationData *app_data, WindowData *win_data,
+        Configuration *config, Instruction *inst, uint64_t y, uint64_t first_cycle,
+        uint64_t index, uint64_t skip, uint64_t rows) {
+    LaneId *lanes;
+    uint64_t lane_count = instruction_lanes(inst, &lanes);
+    bool multiple = lane_count > 1;
+    uint64_t width = win_data->width;
+    uint64_t sidebar = config->bar_offset < width ? config->bar_offset : width;
+    uint64_t stride = config->stage_width + 1;
     enable_colors_win(app_data, win_data, COLOR_TEXT);
-
-    for (uint64_t i = 0; i < win_data->width; ++i) {
-        mvwprintw(win_data->win, y, i, " ");
-        mvwprintw(win_data->win, y+1, i, " ");
-    }
-
-
-    for (uint64_t i = config->bar_offset; i < win_data->width; i += config->stage_width + 1) {
-        for (uint64_t j = 0; j < 2; ++j) {
-            mvwaddch(win_data->win, y+j, i, ACS_VLINE);
+    for (uint64_t r = 0; r < rows; ++r) {
+        uint64_t logical = skip + r;
+        if (stride > 1 && sidebar < width)
+            for (uint64_t x = sidebar; x < width-1; x += stride)
+                mvwaddch(win_data->win, y+r, x, ACS_VLINE);
+        if (inst == NULL || !inst->valid || sidebar < 2) continue;
+        char *label = NULL;
+        if (logical == 0) {
+            if (multiple) {
+                const char *pc = inst->mem_addr ? inst->mem_addr : "";
+                const char *text = inst->instruction ? inst->instruction : "";
+                label = malloc(strlen(pc) + strlen(text) + 64);
+                snprintf(label, strlen(pc) + strlen(text) + 64,
+                         "%lu %s %s", index, pc, text);
+            } else {
+                label = malloc(64);
+                snprintf(label, 64, "%lu %s", index, inst->mem_addr ? inst->mem_addr : "");
+            }
+        } else if (multiple) {
+            label = malloc(256);
+            lane_label(win_data, lanes[logical-1], label, 256);
+        } else if (inst->instruction != NULL) {
+            label = malloc(strlen(inst->instruction) + 3);
+            snprintf(label, strlen(inst->instruction) + 3, "  %s", inst->instruction);
+        }
+        if (label != NULL) {
+            mvwaddnstr(win_data->win, y+r, 1, label, sidebar-1);
+            free(label);
         }
     }
-
-
-    if (inst != NULL && inst->valid) {
-        if (inst->mem_addr != NULL) {
-            mvwprintw(win_data->win, y, 1, "%lu\t%s", index, inst->mem_addr);
-        }
-        if (inst->instruction != NULL) {
-            mvwprintw(win_data->win, y+1, 1, "\t%s", inst->instruction);
-        }
-    }
-
     disable_colors_win(app_data, win_data, COLOR_TEXT);
 
-    if (inst != NULL && inst->valid && inst->stages != NULL) {
+    if (lane_count != 0 && stride > 1 && sidebar + 1 < width-1) {
+        uint64_t left = sidebar + 1, available = width-1-left;
         for (uint64_t i = 0; i < inst->qtty_stages; ++i) {
             Stage *stage = &inst->stages[i];
-
-            if (stage->cycle < *first_cycle) {
-                *first_cycle = stage->cycle;
-            }
-
-            uint64_t stage_offset = config->bar_offset + 1 + (config->stage_width + 1)*(stage->cycle - *first_cycle);
-
+            if (stage->duration == 0 && !stage->open) continue;
+            uint64_t lane = 0;
+            while (lanes[lane].source != stage->source ||
+                   lanes[lane].lane != stage->lane) ++lane;
+            uint64_t logical = multiple ? lane+1 : 1;
+            if (logical < skip || logical-skip >= rows || stage->cycle < first_cycle)
+                continue;
+            uint64_t delta = stage->cycle-first_cycle;
+            if (delta > available/stride) continue;
+            uint64_t offset = delta*stride;
+            if (offset >= available) continue;
+            uint64_t duration = stage->duration ? stage->duration : 1;
+            uint64_t space = available-offset;
+            uint64_t span = duration > space/stride ? space : duration*stride-1;
+            uint64_t screen_y = y + logical-skip;
             enable_colors_win(app_data, win_data, COLOR_STAGES + i%6);
-
-
-            if (strlen(stage->name) < config->stage_width) {
-                mvwprintw(win_data->win, y+1, stage_offset, "%s", stage->name);
-
-                for (uint64_t j = strlen(stage->name); j < config->stage_width; ++j) {
-                    mvwprintw(win_data->win, y+1, stage_offset+j, " ");
-                }
-            }
-            else {
-                char name_short[config->stage_width + 1];
-
-                strncpy(name_short, stage->name, config->stage_width);
-                name_short[config->stage_width] = '\0';
-
-                mvwprintw(win_data->win, y+1, stage_offset, "%s", name_short);
-            }
-
-            if (stage->duration > 1) {
-                for (uint64_t j = 1; j < stage->duration; ++j) {
-                    for (uint64_t k = 0; k < config->stage_width + 1; ++k) {
-                        mvwprintw(win_data->win, y+1, stage_offset+(config->stage_width+1)*j - 1+k, " ");
-                    }
-                }
-            }
-
-            if (i == inst->qtty_stages - 1) {
-                if (inst->flushed) {
-                    mvwprintw(win_data->win, y+1, stage_offset + ((config->stage_width+1)*stage->duration) - 2, "X");
-                }
-            }
-
+            mvwhline(win_data->win, screen_y, left+offset, ' ', span);
+            uint64_t name_width = config->stage_width < span ? config->stage_width : span;
+            mvwaddnstr(win_data->win, screen_y, left+offset, stage->name, name_width);
+            // Mark the last stage on each lane, never another lane's block.
+            bool last = true;
+            for (uint64_t j = i+1; j < inst->qtty_stages; ++j)
+                if (inst->stages[j].source == stage->source &&
+                    inst->stages[j].lane == stage->lane) last = false;
+            if (last && inst->flushed && duration <= space/stride && duration*stride >= 2)
+                mvwaddch(win_data->win, screen_y, left+offset+duration*stride-2, 'X');
             disable_colors_win(app_data, win_data, COLOR_STAGES + i%6);
         }
     }
+    free(lanes);
+}
+
+void print_instruction(ApplicationData *app_data, WindowData *win_data, Configuration *config,
+        Instruction *inst, uint64_t y, uint64_t *first_cycle, uint64_t index) {
+    if (inst != NULL && inst->valid)
+        for (uint64_t i = 0; i < inst->qtty_stages; ++i)
+            if (inst->stages[i].cycle < *first_cycle) *first_cycle = inst->stages[i].cycle;
+    if (y >= win_data->height-1) return;
+    uint64_t rows = instruction_height(inst);
+    if (rows > win_data->height-1-y) rows = win_data->height-1-y;
+    print_instruction_rows(app_data, win_data, config, inst, y, *first_cycle, index, 0, rows);
 }
 
 static Instruction *instruction_at(WindowData *win_data, uint64_t index) {
@@ -308,6 +389,7 @@ static bool visible_instruction(WindowData *win_data, uint64_t *index, bool forw
 }
 
 void move_visible_instruction(WindowData *win_data, bool forward, uint64_t count) {
+    win_data->first_subrow = 0;
     uint64_t index = win_data->first_instruction;
     if (!visible_instruction(win_data, &index, true) &&
         !visible_instruction(win_data, &index, false)) return;
@@ -326,6 +408,26 @@ void move_visible_instruction(WindowData *win_data, bool forward, uint64_t count
     }
 }
 
+void scroll_instruction_rows(WindowData *win_data, bool forward, uint64_t count,
+                             bool show_empty_rows) {
+    while (count-- > 0) {
+        uint64_t height = instruction_height(instruction_at(win_data, win_data->first_instruction));
+        if (forward && win_data->first_subrow + 1 < height) {
+            ++win_data->first_subrow;
+        } else if (!forward && win_data->first_subrow > 0) {
+            --win_data->first_subrow;
+        } else {
+            uint64_t next = win_data->first_instruction;
+            if ((forward && next == UINT64_MAX) || (!forward && next == 0)) break;
+            next = forward ? next+1 : next-1;
+            if (!show_empty_rows && !visible_instruction(win_data, &next, forward)) break;
+            win_data->first_instruction = next;
+            win_data->first_subrow = forward ? 0 :
+                instruction_height(instruction_at(win_data, next))-1;
+        }
+    }
+}
+
 void render_window(ApplicationData *app_data, WindowData *win_data) {
     werase(win_data->win);
 
@@ -334,28 +436,56 @@ void render_window(ApplicationData *app_data, WindowData *win_data) {
     wresize(win_data->win, win_data->height, win_data->width);
     mvwin(win_data->win, win_data->y, win_data->x);
 
+    uint64_t shown_timelines = win_data->height > 3 ? win_data->height-3 : 0;
+    if (shown_timelines > win_data->timelines_amount) shown_timelines = win_data->timelines_amount;
+
     uint64_t previous_first_cycle = win_data->first_cycle;
     win_data->first_cycle = UINT64_MAX;
 
-    if (win_data->tables_array != NULL) {
-        uint64_t amount_of_insts = (win_data->height - 1)/2;
-        
-        if (win_data->timelines_amount != 0) {
-            amount_of_insts = (win_data->height - 1 - 1 - win_data->timelines_amount)/2;
-        }
-
+    if (win_data->tables_array != NULL && win_data->height > 2) {
+        uint64_t reserved = shown_timelines + (shown_timelines != 0 ? 1 : 0);
+        uint64_t budget = win_data->height-2;
+        budget = reserved < budget ? budget-reserved : 0;
+        typedef struct {
+            Instruction *inst;
+            uint64_t id, skip, rows;
+        } VisibleInstruction;
+        VisibleInstruction *visible = calloc(budget+1, sizeof(*visible));
+        uint64_t used = 0, count = 0;
         uint64_t index = win_data->first_instruction;
-        for (uint64_t i = 0; i < amount_of_insts; ++i) {
+        while (used < budget) {
             if (!app_data->config.show_empty_rows &&
                 !visible_instruction(win_data, &index, true)) break;
-            if (i == 0 && !app_data->config.show_empty_rows)
+            if (count == 0 && index != win_data->first_instruction) {
                 win_data->first_instruction = index;
+                win_data->first_subrow = 0;
+            }
             Instruction *inst = instruction_at(win_data, index);
-
-            print_instruction(app_data, win_data, &app_data->config, inst, i*2+1, &win_data->first_cycle, index);
+            uint64_t height = instruction_height(inst);
+            uint64_t skip = count == 0 ? win_data->first_subrow : 0;
+            if (skip >= height) skip = win_data->first_subrow = 0;
+            uint64_t rows = height-skip;
+            if (rows > budget-used) rows = budget-used;
+            visible[count++] = (VisibleInstruction){inst, index, skip, rows};
+            used += rows;
+            if (inst != NULL && inst->valid)
+                for (uint64_t i = 0; i < inst->qtty_stages; ++i)
+                    if (inst->stages[i].cycle < win_data->first_cycle)
+                        win_data->first_cycle = inst->stages[i].cycle;
             if (index == UINT64_MAX) break;
             ++index;
         }
+        // Pick the shared cycle origin before painting any lane. Otherwise a
+        // later lane/instruction with an earlier stage shifts only part of the view.
+        if (win_data->first_cycle == UINT64_MAX) win_data->first_cycle = previous_first_cycle;
+        uint64_t y = 1;
+        for (uint64_t i = 0; i < count; ++i) {
+            print_instruction_rows(app_data, win_data, &app_data->config,
+                visible[i].inst, y, win_data->first_cycle, visible[i].id,
+                visible[i].skip, visible[i].rows);
+            y += visible[i].rows;
+        }
+        free(visible);
     }
 
     // A page containing only empty rows must not wrap the displayed clock to
@@ -363,9 +493,9 @@ void render_window(ApplicationData *app_data, WindowData *win_data) {
     if (win_data->first_cycle == UINT64_MAX)
         win_data->first_cycle = previous_first_cycle;
 
-    if (win_data->timelines_amount != 0) {
+    if (shown_timelines != 0) {
         for (uint64_t i = 1; i < win_data->width - 1; ++i) {
-            mvwaddch(win_data->win, win_data->height - 2 - win_data->timelines_amount, i, ACS_HLINE);
+            mvwaddch(win_data->win, win_data->height - 2 - shown_timelines, i, ACS_HLINE);
         }
     }
 
@@ -390,14 +520,16 @@ void render_window(ApplicationData *app_data, WindowData *win_data) {
 
     disable_colors_win(app_data, win_data, COLOR_BOX);
     
-    uint64_t init_line_timelines = win_data->height - 1 - win_data->timelines_amount;
+    uint64_t init_line_timelines = win_data->height - 1 - shown_timelines;
 
-    for (uint64_t i = 0; i < win_data->timelines_amount; ++i) {
+    for (uint64_t i = 0; i < shown_timelines; ++i) {
         uint64_t cycle_timeline = win_data->timelines[i];
 
         mvwprintw(win_data->win, init_line_timelines + i, 1, "Timeline %lu at cycle %lu", i, cycle_timeline);
 
-        if ((cycle_timeline >= win_data->first_cycle) && 
+        if (app_data->config.bar_offset + 1 < win_data->width &&
+            app_data->config.stage_width > 0 && app_data->config.stage_width < UINT64_MAX &&
+            (cycle_timeline >= win_data->first_cycle) &&
             ((cycle_timeline <= win_data->first_cycle + (win_data->width - app_data->config.bar_offset - 1)/(app_data->config.stage_width + 1)))) {
             enable_colors_win(app_data, win_data, COLOR_TIMELINE);
 
@@ -421,7 +553,10 @@ void render_window(ApplicationData *app_data, WindowData *win_data) {
     enable_colors_win(app_data, win_data, COLOR_TEXT_BOLD);
     mvwprintw(win_data->win, 0, app_data->config.bar_offset + 1, "v %lu", win_data->first_cycle);
 
-    uint64_t last_cycle = win_data->first_cycle + ((win_data->width - 2 - app_data->config.bar_offset)/(app_data->config.stage_width + 1));
+    uint64_t last_cycle = win_data->first_cycle;
+    if (app_data->config.bar_offset + 2 < win_data->width &&
+        app_data->config.stage_width > 0 && app_data->config.stage_width < UINT64_MAX)
+        last_cycle += (win_data->width - 2 - app_data->config.bar_offset)/(app_data->config.stage_width + 1);
 
     uint64_t start_text = 2;
 

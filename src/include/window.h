@@ -108,6 +108,7 @@ struct WindowData_s {
     InstructionTableArray *tables_array;
 
     uint64_t first_instruction;
+    uint64_t first_subrow; // Vertical offset inside a tall multi-lane instruction.
     uint64_t first_cycle;
 
     char *filename;
@@ -116,6 +117,10 @@ struct WindowData_s {
     
     uint64_t timelines_amount;
     uint64_t *timelines;
+
+    // Names for traces attached with :attach. Source 0 is the primary file.
+    uint64_t lane_sources_amount;
+    char **lane_sources;
 };
 
 typedef struct WindowData_s WindowData;
@@ -154,6 +159,11 @@ void render(ApplicationData *app_data);
 void render_window(ApplicationData *app_data, WindowData *win_data);
 
 void move_visible_instruction(WindowData *win_data, bool forward, uint64_t count);
+
+void scroll_instruction_rows(WindowData *win_data, bool forward, uint64_t count,
+                             bool show_empty_rows);
+
+void clear_lane_sources(WindowData *win_data);
 
 void print_instruction(ApplicationData *app_data, WindowData *win_data, Configuration *config, Instruction *inst, uint64_t y, uint64_t *first_cycle, uint64_t index);
 
