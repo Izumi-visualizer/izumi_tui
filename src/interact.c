@@ -24,12 +24,20 @@
 #include "window.h"
 #include "command_tree.h"
 #include "error.h"
+#include "autocomplete.h"
 
 bool parse_input(ApplicationData *app_data, int ch) {
     if (app_data->mode == NORMAL) {
         switch (ch) {
             case 'j':
             case KEY_DOWN:
+                if (!app_data->config.show_empty_rows) {
+                    for (uint64_t i = 0; i < app_data->windows_qtty; ++i)
+                        if (app_data->windows_synced || i == app_data->window_focused)
+                            move_visible_instruction(app_data->windows[i], true,
+                                app_data->number == 0 ? 1 : app_data->number);
+                    break;
+                }
                 if (app_data->windows != NULL) {
                     if (app_data->windows_synced) {
                         for (uint64_t i = 0; i < app_data->windows_qtty; i++) {
@@ -53,6 +61,13 @@ bool parse_input(ApplicationData *app_data, int ch) {
                 break;
             case 'k':
             case KEY_UP:
+                if (!app_data->config.show_empty_rows) {
+                    for (uint64_t i = 0; i < app_data->windows_qtty; ++i)
+                        if (app_data->windows_synced || i == app_data->window_focused)
+                            move_visible_instruction(app_data->windows[i], false,
+                                app_data->number == 0 ? 1 : app_data->number);
+                    break;
+                }
                 if (app_data->windows != NULL) {
                     if (app_data->windows_synced) {
                         for (uint64_t i = 0; i < app_data->windows_qtty; i++) {
@@ -161,6 +176,11 @@ bool parse_input(ApplicationData *app_data, int ch) {
 
                     app_data->command = realloc(app_data->command, sizeof(char) * len);
                     app_data->command[len - 1] = '\0';
+                }
+                break;
+            case '\t': // Tab - accept autocomplete if available
+                if (accept_autocomplete_suggestion(app_data)) {
+                    /* suggestion accepted, do nothing else */
                 }
                 break;
             default:

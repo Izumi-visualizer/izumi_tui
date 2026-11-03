@@ -9,6 +9,7 @@ izumi_c_sources = \
 		utils.c
 
 izumi_headers = \
+    include/autocomplete.h \
     include/command_tree.h \
     include/commands.h \
     include/configure.h \

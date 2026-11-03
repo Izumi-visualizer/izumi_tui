@@ -36,6 +36,7 @@ CommandFixedArglistCallback open_cb;
 CommandArglistCallback set_cb;
 CommandNoArgsCallback panelsync_cb;
 CommandNoArgsCallback paneldesync_cb;
+CommandNoArgsCallback toggleemptyrows_cb;
 CommandFixedArglistCallback findpc_cb;
 CommandFixedArglistCallback findinst_cb;
 CommandNoArgsCallback next_cb;
@@ -56,6 +57,7 @@ const Command COMMANDS[] = {
     CMD_FIXED_ARGLIST("open", 1, open_cb),
     CMD_SUBCOMMAND("panelcmd", PANEL_COMMANDS),
     CMD_ARGLIST("set", set_cb),
+    CMD_NO_ARGS("toggleemptyrows", toggleemptyrows_cb),
     CMD_NO_ARGS("panelsync", panelsync_cb),
     CMD_NO_ARGS("paneldesync", paneldesync_cb),
     CMD_FIXED_ARGLIST("findpc", 1, findpc_cb),
