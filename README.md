@@ -76,6 +76,8 @@ make run ARGS=path/to/file
 | `:quit` | Quit        |
 | `:open (path)`    | Open a file on the current panel |
 | `:o (path)`    | Open a file on the current panel |
+| `:attach (path)` | Merge another trace's lanes into the focused open panel |
+| `:at (path)` | Merge another trace's lanes into the focused open panel |
 | `:findpc 0x(address)` | Search and go to the first appearance of the address |
 | `:findinst (instruction)` | Search and go to the first appearance of the instruction |
 | `:next` | Next appearance of the last search |
@@ -174,8 +176,24 @@ controls entire empty instruction rows independently.
 reach lower lanes of an instruction taller than the panel. Numeric prefixes
 work with `J`/`K`. Searching or opening a trace resets the within-instruction
 scroll offset. Resizing and timelines clip lane content to the available panel
-area. This feature handles lanes already present in one Kanata file; attaching
-separate trace files to a panel is not supported yet.
+area.
+
+### Attaching other traces
+
+`:attach <path>` parses another Kanata trace and merges its lanes into the
+focused panel, matching instructions by ID. This is how CVFPU traces can be
+viewed alongside the core trace from the same run: open the core trace, then
+attach each CVFPU log. Stage cycles keep their original values, so both traces
+share the same horizontal axis.
+
+Each attached file becomes a new source. Lanes from the primary file are
+labelled `Lane N`; lanes from attached files are labelled with the file's
+basename and lane, e.g. `fpuv_top.kanata.log:1`. Identical lane IDs from
+different files therefore remain distinct lanes. Repeating `:attach` merges
+additional files. Instructions that exist only in an attached trace are added
+with that trace's labels; the primary trace's PC, disassembly and labels are
+never overwritten. Opening a new primary trace with `:open` clears all attached
+sources. There is no detach command yet.
 
 ## Screenshot
 

@@ -88,8 +88,35 @@ ErrorKind open_cb(ApplicationData *app_data, const char * argv[]) {
         free(app_data->windows[app_data->window_focused]->filename);
     }
 
+    clear_lane_sources(app_data->windows[app_data->window_focused]);
     app_data->windows[app_data->window_focused]->filename = read_file(file_name, app_data->windows[app_data->window_focused]->tables_array);
     app_data->windows[app_data->window_focused]->first_subrow = 0;
+    return NO_ERROR;
+}
+
+ErrorKind attach_cb(ApplicationData *app_data, const char * argv[]) {
+    if (app_data->windows == NULL) return ERROR_NO_WINDOW;
+
+    WindowData *win_data = app_data->windows[app_data->window_focused];
+    if (win_data->tables_array == NULL || win_data->tables_array->tables == NULL)
+        return ERROR_NO_TRACE_OPEN;
+
+    char *path = realpath(argv[0], NULL);
+    FileData file_data = check_file(path);
+    if (!file_data.exists) { free(path); return ERROR_FILE_NOT_EXISTS; }
+    if (!file_data.is_file) { free(path); return ERROR_NOT_A_FILE; }
+
+    // Source 0 is the primary trace; each attached file receives the next ID.
+    uint32_t source = win_data->lane_sources_amount + 1;
+    attach_trace(path, win_data->tables_array, source);
+
+    win_data->lane_sources = realloc(win_data->lane_sources,
+                                     source * sizeof(char *));
+    // Name the source after the path the user typed, not a symlink target.
+    win_data->lane_sources[source-1] = file_basename(argv[0]);
+    win_data->lane_sources_amount = source;
+
+    free(path);
     return NO_ERROR;
 }
 
@@ -630,7 +657,9 @@ char *compute_autocomplete_suggestion(ApplicationData *app_data) {
     }
 
     // Handle open (filesystem completion) when command is "open" (or alias "o") and idx==1
-    if ((strcmp(command_name, "open") == 0 || strcmp(command_name, "o") == 0) && idx == 1) {
+    if ((strcmp(command_name, "open") == 0 || strcmp(command_name, "o") == 0 ||
+         strcmp(command_name, "attach") == 0 || strcmp(command_name, "at") == 0) &&
+        idx == 1) {
         // token may be empty
         result = complete_filesystem(partial);
         free_tokens(tokens, argc);
