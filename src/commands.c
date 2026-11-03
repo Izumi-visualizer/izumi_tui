@@ -89,6 +89,7 @@ ErrorKind open_cb(ApplicationData *app_data, const char * argv[]) {
     }
 
     app_data->windows[app_data->window_focused]->filename = read_file(file_name, app_data->windows[app_data->window_focused]->tables_array);
+    app_data->windows[app_data->window_focused]->first_subrow = 0;
     return NO_ERROR;
 }
 
@@ -216,6 +217,7 @@ ErrorKind findpc_cb(ApplicationData *app_data, const char * argv[]) {
     if (!result.valid) return ERROR_NO_RESULT;
 
     app_data->windows[app_data->window_focused]->first_instruction = result.position;
+    app_data->windows[app_data->window_focused]->first_subrow = 0;
 
     if (app_data->windows[app_data->window_focused]->last_search.pattern != NULL) {
         free(app_data->windows[app_data->window_focused]->last_search.pattern);
@@ -239,6 +241,7 @@ ErrorKind findinst_cb(ApplicationData *app_data, const char * argv[]) {
     if (!result.valid) return ERROR_NO_RESULT;
 
     app_data->windows[app_data->window_focused]->first_instruction = result.position;
+    app_data->windows[app_data->window_focused]->first_subrow = 0;
 
     if (app_data->windows[app_data->window_focused]->last_search.pattern != NULL) {
         free(app_data->windows[app_data->window_focused]->last_search.pattern);
@@ -264,6 +267,7 @@ ErrorKind next_cb(ApplicationData *app_data) {
     if (!result.valid) return ERROR_NO_RESULT;
 
     app_data->windows[app_data->window_focused]->first_instruction = result.position;
+    app_data->windows[app_data->window_focused]->first_subrow = 0;
 
     return NO_ERROR;
 }
@@ -281,6 +285,7 @@ ErrorKind prev_cb(ApplicationData *app_data) {
     if (!result.valid) return ERROR_NO_RESULT;
 
     app_data->windows[app_data->window_focused]->first_instruction = result.position;
+    app_data->windows[app_data->window_focused]->first_subrow = 0;
 
     return NO_ERROR;
 }

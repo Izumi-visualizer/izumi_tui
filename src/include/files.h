@@ -46,4 +46,22 @@ FileData check_file(const char *path);
  */
 char *read_file(const char *path, InstructionTableArray *tables_array);
 
+/*
+ * This function returns a newly allocated copy of the file's basename.
+ */
+char *file_basename(const char *path);
+
+/*
+ * Parse a trace and merge its stages into an existing tables array. Stages are
+ * tagged with the given source index so they remain distinguishable from the
+ * primary trace even when lane IDs collide. Instructions missing from the
+ * primary trace are created with the attached trace's labels.
+ *
+ * path: The path of the attached trace.
+ * tables_array: The array of tables of the open trace.
+ * source: Source index (1 for the first attached file, 2 for the next, ...).
+ */
+void attach_trace(const char *path, InstructionTableArray *tables_array,
+                  uint32_t source);
+
 #endif
