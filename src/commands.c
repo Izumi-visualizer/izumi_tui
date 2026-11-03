@@ -108,7 +108,7 @@ ErrorKind panelcmd_k_cb(ApplicationData *app_data) {
     return NO_ERROR;
 }
 
-bool set_cb(ApplicationData *app_data, const int argc, const char *argv[]) {
+ErrorKind set_cb(ApplicationData *app_data, const int argc, const char *argv[]) {
     const char *config = argv[0];
 
     if (strcmp(config, "bar_offset") == 0) { // :set bar_offset (number)
@@ -121,6 +121,15 @@ bool set_cb(ApplicationData *app_data, const int argc, const char *argv[]) {
         if (argc != 2) return ERROR_WRONG_AMOUNT_ARGS;
         const char* value = argv[1];
         if (!parse_u64(value, &app_data->config.stage_width)) return ERROR_WRONG_ARGS;
+    }
+    else if (strcmp(config, "show_empty_rows") == 0) {
+        if (argc != 2) return ERROR_WRONG_AMOUNT_ARGS;
+        if (strcmp(argv[1], "on") == 0)
+            app_data->config.show_empty_rows = true;
+        else if (strcmp(argv[1], "off") == 0)
+            app_data->config.show_empty_rows = false;
+        else
+            return ERROR_WRONG_ARGS;
     }
     else if (strcmp(config, "color") == 0) { // :set color (element) blue|red|yellow|green|white|black|cyan|magenta blue|red|yellow|green|white|black|cyan|magenta <bold>
         if (argc != 4 && argc != 5) return ERROR_WRONG_AMOUNT_ARGS;
@@ -185,6 +194,11 @@ bool set_cb(ApplicationData *app_data, const int argc, const char *argv[]) {
 
 ErrorKind panelsync_cb(ApplicationData *app_data) {
     app_data->windows_synced = true;
+    return NO_ERROR;
+}
+
+ErrorKind toggleemptyrows_cb(ApplicationData *app_data) {
+    app_data->config.show_empty_rows = !app_data->config.show_empty_rows;
     return NO_ERROR;
 }
 
@@ -622,8 +636,14 @@ char *compute_autocomplete_suggestion(ApplicationData *app_data) {
     if (strcmp(command_name, "set") == 0) {
         // idx 1: first arg options
         if (idx == 1) {
-            const char *opts[] = {"bar_offset", "stage_width", "color"};
-            result = complete_from_list(partial, opts, 3);
+            const char *opts[] = {"bar_offset", "stage_width", "color", "show_empty_rows"};
+            result = complete_from_list(partial, opts, 4);
+            free_tokens(tokens, argc);
+            return result;
+        }
+        if (argc >= 2 && strcmp(tokens[1], "show_empty_rows") == 0 && idx == 2) {
+            const char *opts[] = {"on", "off"};
+            result = complete_from_list(partial, opts, 2);
             free_tokens(tokens, argc);
             return result;
         }

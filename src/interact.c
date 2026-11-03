@@ -31,6 +31,13 @@ bool parse_input(ApplicationData *app_data, int ch) {
         switch (ch) {
             case 'j':
             case KEY_DOWN:
+                if (!app_data->config.show_empty_rows) {
+                    for (uint64_t i = 0; i < app_data->windows_qtty; ++i)
+                        if (app_data->windows_synced || i == app_data->window_focused)
+                            move_visible_instruction(app_data->windows[i], true,
+                                app_data->number == 0 ? 1 : app_data->number);
+                    break;
+                }
                 if (app_data->windows != NULL) {
                     if (app_data->windows_synced) {
                         for (uint64_t i = 0; i < app_data->windows_qtty; i++) {
@@ -54,6 +61,13 @@ bool parse_input(ApplicationData *app_data, int ch) {
                 break;
             case 'k':
             case KEY_UP:
+                if (!app_data->config.show_empty_rows) {
+                    for (uint64_t i = 0; i < app_data->windows_qtty; ++i)
+                        if (app_data->windows_synced || i == app_data->window_focused)
+                            move_visible_instruction(app_data->windows[i], false,
+                                app_data->number == 0 ? 1 : app_data->number);
+                    break;
+                }
                 if (app_data->windows != NULL) {
                     if (app_data->windows_synced) {
                         for (uint64_t i = 0; i < app_data->windows_qtty; i++) {

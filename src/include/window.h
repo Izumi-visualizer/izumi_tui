@@ -74,6 +74,7 @@ typedef enum Color_e Color;
 struct Configuration_s {
     uint64_t bar_offset;
     uint64_t stage_width;
+    bool show_empty_rows;
 
     // 0: commands, 1: box, 2: text, 3: status, 4-9: stages
     ColorData colors[COLORS_AMOUNT];
@@ -151,6 +152,8 @@ void render_status_bar(ApplicationData *app_data);
 void render(ApplicationData *app_data);
 
 void render_window(ApplicationData *app_data, WindowData *win_data);
+
+void move_visible_instruction(WindowData *win_data, bool forward, uint64_t count);
 
 void print_instruction(ApplicationData *app_data, WindowData *win_data, Configuration *config, Instruction *inst, uint64_t y, uint64_t *first_cycle, uint64_t index);
 

@@ -90,12 +90,26 @@ make run ARGS=path/to/file
 | `:ca` | Close all panels |
 | `:set bar_offset (amount)` | Set offset of the vertical bar (not persistent) |
 | `:set stage_width (amount)` | Set width of the stage on the pipeline visualizer (not persistent) |
+| `:toggleemptyrows` | Toggle empty instruction rows across all panels |
+| `:set show_empty_rows on\|off` | Show empty instruction rows or hide them (default: `on`) |
 | `:set color (element) (foreground color) (background color) <bold>` | Set color of the element (not persistent) |
 | `:panelsync` | Sync movement of all the panels |
 | `:paneldesync` | Desync movement of all the panels |
 
 > [!NOTE]
 > The `:set` commands are not persistent, so you will need to set them again on the next run.
+
+Empty rows include instruction-ID slots with no instruction and instructions
+with no recorded pipeline stages. Showing them preserves the original ID-space
+spacing; hiding them packs the remaining rows together. Instruction IDs and
+trace data are never renumbered or modified. When empty rows are hidden, `j`/`k`
+and their numeric prefixes move through visible instructions. The status bar
+shows the current setting. You can also put `set show_empty_rows on` or
+`set show_empty_rows off` in your Izumi configuration file.
+
+This toggle cannot create rows for instructions absent from the trace's ID
+space: a file containing only sequential IDs for accepted FPU operations has
+no gaps to reveal.
 
 > [!IMPORTANT]
 > Information for the `:set color` command

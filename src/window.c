@@ -171,6 +171,7 @@ void init_application(ApplicationData *app_data) {
 
     app_data->config.bar_offset = 32;
     app_data->config.stage_width = 3;
+    app_data->config.show_empty_rows = true;
 
     app_data->quit_requested = false;
 
@@ -263,6 +264,68 @@ void print_instruction(ApplicationData *app_data, WindowData *win_data, Configur
     }
 }
 
+static Instruction *instruction_at(WindowData *win_data, uint64_t index) {
+    InstructionTableArray *tables = win_data->tables_array;
+    if (tables == NULL || tables->tables == NULL ||
+        index/256 >= tables->qtty_tables || tables->tables[index/256] == NULL)
+        return NULL;
+    return &tables->tables[index/256]->content[index%256];
+}
+
+static bool row_has_stages(WindowData *win_data, uint64_t index) {
+    Instruction *inst = instruction_at(win_data, index);
+    return inst != NULL && inst->valid && inst->stages != NULL && inst->qtty_stages > 0;
+}
+
+// Search actual instruction IDs, retaining those IDs for labels and searches.
+// Skip absent table ranges in one step rather than scanning every empty slot.
+static bool visible_instruction(WindowData *win_data, uint64_t *index, bool forward) {
+    InstructionTableArray *tables = win_data->tables_array;
+    if (tables == NULL || tables->tables == NULL || tables->qtty_tables == 0)
+        return false;
+    uint64_t limit = tables->qtty_tables * 256;
+    if (*index >= limit) {
+        if (forward) return false;
+        *index = limit - 1;
+    }
+    for (;;) {
+        if (row_has_stages(win_data, *index)) return true;
+        if (tables->tables[*index/256] == NULL) {
+            if (forward) {
+                *index = (*index/256 + 1) * 256;
+                if (*index >= limit) return false;
+            } else {
+                if (*index/256 == 0) return false;
+                *index = (*index/256) * 256 - 1;
+            }
+        } else if (forward) {
+            if (++*index >= limit) return false;
+        } else {
+            if (*index == 0) return false;
+            --*index;
+        }
+    }
+}
+
+void move_visible_instruction(WindowData *win_data, bool forward, uint64_t count) {
+    uint64_t index = win_data->first_instruction;
+    if (!visible_instruction(win_data, &index, true) &&
+        !visible_instruction(win_data, &index, false)) return;
+    win_data->first_instruction = index;
+    while (count-- > 0) {
+        uint64_t next = win_data->first_instruction;
+        if (forward) {
+            if (next == UINT64_MAX) break;
+            ++next;
+        } else {
+            if (next == 0) break;
+            --next;
+        }
+        if (!visible_instruction(win_data, &next, forward)) break;
+        win_data->first_instruction = next;
+    }
+}
+
 void render_window(ApplicationData *app_data, WindowData *win_data) {
     werase(win_data->win);
 
@@ -271,6 +334,7 @@ void render_window(ApplicationData *app_data, WindowData *win_data) {
     wresize(win_data->win, win_data->height, win_data->width);
     mvwin(win_data->win, win_data->y, win_data->x);
 
+    uint64_t previous_first_cycle = win_data->first_cycle;
     win_data->first_cycle = UINT64_MAX;
 
     if (win_data->tables_array != NULL) {
@@ -280,20 +344,24 @@ void render_window(ApplicationData *app_data, WindowData *win_data) {
             amount_of_insts = (win_data->height - 1 - 1 - win_data->timelines_amount)/2;
         }
 
+        uint64_t index = win_data->first_instruction;
         for (uint64_t i = 0; i < amount_of_insts; ++i) {
-            Instruction *inst = NULL;
-
-            uint64_t index = win_data->first_instruction + i;
-
-            if (index/256 < win_data->tables_array->qtty_tables) {
-                if (win_data->tables_array->tables[index/256] != NULL) {
-                    inst = &win_data->tables_array->tables[index/256]->content[index%256];
-                }
-            }
+            if (!app_data->config.show_empty_rows &&
+                !visible_instruction(win_data, &index, true)) break;
+            if (i == 0 && !app_data->config.show_empty_rows)
+                win_data->first_instruction = index;
+            Instruction *inst = instruction_at(win_data, index);
 
             print_instruction(app_data, win_data, &app_data->config, inst, i*2+1, &win_data->first_cycle, index);
+            if (index == UINT64_MAX) break;
+            ++index;
         }
     }
+
+    // A page containing only empty rows must not wrap the displayed clock to
+    // UINT64_MAX. Keep its prior horizontal origin until stages are visible.
+    if (win_data->first_cycle == UINT64_MAX)
+        win_data->first_cycle = previous_first_cycle;
 
     if (win_data->timelines_amount != 0) {
         for (uint64_t i = 1; i < win_data->width - 1; ++i) {
@@ -406,6 +474,8 @@ void render_status_bar(ApplicationData *app_data) {
 
     enable_colors_app(app_data, COLOR_STATUS);
     mvprintw(getmaxy(stdscr)-1, 0, " %s ", mode);
+    if (app_data->mode == NORMAL)
+        printw(" Empty rows: %s", app_data->config.show_empty_rows ? "on" : "off");
     disable_colors_app(app_data, COLOR_STATUS);
 
     if (app_data->mode == COMMAND) {

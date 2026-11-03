@@ -14,6 +14,16 @@ else
 izumi_LDADD += $(LIBIZUMI_LA)
 endif
 
+check_PROGRAMS = test_empty_rows
+test_empty_rows_SOURCES = test_empty_rows.c \
+    command_tree.c commands.c configure.c files.c interact.c window.c utils.c
+test_empty_rows_CPPFLAGS = $(izumi_CPPFLAGS)
+test_empty_rows_LDADD = $(izumi_LDADD)
+test_empty_rows_LDFLAGS = $(izumi_LDFLAGS)
+
+check-local: test_empty_rows
+	./test_empty_rows
+
 ARGS ?=
 
 .PHONY: run
