@@ -5,7 +5,7 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     
-    libizumi.url = "github:Izumi-visualizer/libizumi";
+    libizumi.url = "github:Izumi-visualizer/libizumi/b8f4c8b9edfacc760bac0087677b1bba03ff0e53";
   };
 
   outputs = inputs@{ flake-parts, ... }:
