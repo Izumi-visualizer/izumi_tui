@@ -1,4 +1,4 @@
-AC_INIT([izumi_tui], [0.2.0alpha])
+AC_INIT([izumi_tui], [0.2.0])
 
 AC_CONFIG_SRCDIR([src/main.c])
 AC_CONFIG_AUX_DIR([build-aux])
