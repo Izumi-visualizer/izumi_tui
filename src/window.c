@@ -578,7 +578,7 @@ void render_window(ApplicationData *app_data, WindowData *win_data) {
 
     disable_colors_win(app_data, win_data, COLOR_TEXT_BOLD);
 
-    wrefresh(win_data->win);
+    wnoutrefresh(win_data->win);
 }
 
 void render_status_bar(ApplicationData *app_data) {
@@ -647,15 +647,19 @@ void render_status_bar(ApplicationData *app_data) {
 }
 
 void render(ApplicationData *app_data) {
+    // Stage stdscr (status bar) before the panels: after a resize ncurses
+    // clears stdscr, and staging it last would paint that blank screen over
+    // the panels until the next keystroke.
+    render_status_bar(app_data);
+    wnoutrefresh(stdscr);
+
     for (uint64_t i = 0; i < app_data->windows_qtty; i++) {
         if (app_data->windows[i] != NULL && app_data->windows[i]->win != NULL) {
             render_window(app_data, app_data->windows[i]);
         }
     }
 
-    render_status_bar(app_data);
-
-    refresh();
+    doupdate();
 }
 
 void set_color(ApplicationData *app_data, uint64_t index, short fg, short bg, bool bold) {
