@@ -27,6 +27,9 @@
 #include "autocomplete.h"
 
 bool parse_input(ApplicationData *app_data, int ch) {
+    // Terminal resized: nothing to do, the caller re-renders with the new size
+    if (ch == KEY_RESIZE) return true;
+
     if (app_data->mode == NORMAL) {
         switch (ch) {
             case 'j':
