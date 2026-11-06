@@ -630,7 +630,8 @@ void render_status_bar(ApplicationData *app_data) {
 
     enable_colors_app(app_data, COLOR_STATUS);
     mvprintw(getmaxy(stdscr)-1, 0, " %s ", mode);
-    if (app_data->mode == NORMAL)
+    /* The error message is printed over this, so skip it then. */
+    if (app_data->mode == NORMAL && app_data->error == NO_ERROR)
         printw(" Empty rows: %s", app_data->config.show_empty_rows ? "on" : "off");
     disable_colors_app(app_data, COLOR_STATUS);
 

@@ -41,7 +41,7 @@ typedef enum ErrorKind_e ErrorKind;
 static char *error_msg[ERRORS_AMOUNT] = {
     "Wrong command",
     "Empty command",
-    "Wrong ammount of arguments on the command",
+    "Wrong amount of arguments on the command",
     "Wrong arguments on the command",
     "Command with subcommands empty",
     "Error on execution of command",
