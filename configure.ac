@@ -7,6 +7,8 @@ AM_INIT_AUTOMAKE([foreign -Wall -Werror])
 AM_SILENT_RULES([yes])
 
 AC_PROG_CC
+AM_PROG_AR
+AC_PATH_PROG([PYTHON3], [python3])
 LT_INIT
 
 AC_ARG_WITH([system_libizumi],
@@ -70,6 +72,7 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
     Makefile
     src/Makefile
+    tests/Makefile
 ])
 
 AC_OUTPUT

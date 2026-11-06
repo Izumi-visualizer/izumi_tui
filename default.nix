@@ -5,6 +5,7 @@
 , gnumake
 , libizumi
 , ncurses
+, python3
 }:
 
 stdenv.mkDerivation rec {
@@ -17,6 +18,7 @@ stdenv.mkDerivation rec {
     autoreconfHook
     gnumake
     pkgconf
+    python3
   ];
 
   buildInputs = [

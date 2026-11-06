@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "interact.h"
 #include "window.h"
@@ -108,8 +109,10 @@ bool parse_input(ApplicationData *app_data, int ch) {
             case '7':
             case '8':
             case '9':
-                app_data->number *= 10;
-                app_data->number += ch - '0';
+                if (app_data->number > (UINT64_MAX - (uint64_t)(ch - '0')) / 10)
+                    app_data->number = UINT64_MAX;
+                else
+                    app_data->number = app_data->number * 10 + ch - '0';
                 break;
 
             default:
@@ -124,10 +127,13 @@ bool parse_input(ApplicationData *app_data, int ch) {
                 app_data->mode = NORMAL;
                 break;
             case '\n': // Enter
+            case KEY_ENTER:
                 app_data->error = run_command(app_data);
                 app_data->mode = NORMAL;
                 break;
             case KEY_BACKSPACE: // Backspace
+            case 127:
+            case '\b':
                 if (strlen(app_data->command) > 0) {
                     int len = strlen(app_data->command);
 
@@ -141,6 +147,7 @@ bool parse_input(ApplicationData *app_data, int ch) {
                 }
                 break;
             default:
+                if (ch < 0 || ch > 255 || !isprint((unsigned char)ch)) break;
                 len = strlen(app_data->command);
 
                 app_data->command = realloc(app_data->command, sizeof(char) * (len + 2));

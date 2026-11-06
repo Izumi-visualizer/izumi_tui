@@ -54,6 +54,69 @@ You can also use `nix` (flakes recommended):
 nix run github:Izumi-visualizer/izumi_tui
 ```
 
+## Running tests
+
+After configuring a build directory, run `make check`. The suite includes:
+
+- C tests for command parsing/dispatch, numeric arguments, configuration files,
+  autocomplete, file loading and multi-source trace attachment.
+- Headless ncurses tests that inspect actual window cells, exercise panel
+  lifecycle, searching, keyboard input, lane rendering and terminal resizing.
+- Deterministic property tests: 10,000 numeric round trips, 10,000 randomized
+  tokenization/completion cases, and 3,000 timeline operations checked against
+  an independent sorted-array model.
+- Python PTY tests for help/version, startup, config-created panels, resize,
+  search and quit. These require Python 3 and Unix PTY support. If Python 3 is
+  unavailable, only the PTY test is skipped; C tests still run.
+- Path tests for `~`, `~/…`, `~username` and `~username/…`, including completion,
+  opening/attaching, unknown users, missing HOME and overlong usernames.
+- Controlled allocation-failure tests for configuration cleanup and path
+  expansion. These use GNU-compatible linker wrapping to fail application
+  allocations without affecting libc, ncurses or sanitizer allocations.
+
+Tests use temporary files and virtual terminals; no interactive session or
+personal configuration is needed. Results are in `tests/test-suite.log` under
+the build directory. CI runs normal and sanitizer builds, including the same
+bounded property tests; there is no long-running fuzz campaign in CI.
+
+For sanitizer checks, configure a separate build directory:
+
+```sh
+mkdir build-sanitized
+cd build-sanitized
+../configure --enable-sanitizers
+make -j2 check
+```
+
+For a nonstandard libizumi installation, pass
+`LIBIZUMI_CPPFLAGS='-I/path/to/include'` and
+`LIBIZUMI_LDFLAGS='-L/path/to/lib -Wl,-rpath,/path/to/lib'` to `configure`.
+The tests work with the pinned libizumi dependency used by the Nix build.
+
+To measure coverage with GCC and its matching `gcov`:
+
+```sh
+mkdir build-coverage
+cd build-coverage
+../configure --disable-shared \
+  CFLAGS='-O0 -g --coverage -fprofile-abs-path' LDFLAGS=--coverage
+make check
+gcov -f -b src/libizumi_tui_la-*.gcno src/izumi-main.gcno
+python3 ../tests/check_coverage.py .
+```
+
+`make distcheck` also verifies the distributed sources, out-of-tree builds,
+tests and installation/uninstallation.
+
+Local GCC coverage verification exercises all 75 implemented functions and
+all 1,199 executable source lines (100%). The normal CI job checks this target
+with `tests/check_coverage.py`; a newly uncovered line or function fails it.
+The coverage checker requires Python 3 and a GCC/gcov version supporting JSON
+output. Line coverage does not imply 100% branch coverage or every possible
+input being tested. The suite removes no coverage lines through exclusions;
+redundant numeric validation and unreachable autocomplete fallback code were
+removed instead.
+
 ## Usage
 
 Use the installed `izumi` binary...
@@ -98,6 +161,11 @@ make run ARGS=path/to/file
 | `:set color (element) (foreground color) (background color) <bold>` | Set color of the element (not persistent) |
 | `:panelsync` | Sync movement of all the panels |
 | `:paneldesync` | Desync movement of all the panels |
+
+Paths passed to `:open`/`:o` and `:attach`/`:at` support `~/…` using `$HOME`
+and `~username/…` using that user's home directory. Autocomplete uses the same
+expansion. Unknown users and unavailable HOME directories return a file error
+and no completion suggestion; usernames are never silently truncated.
 
 > [!NOTE]
 > The `:set` commands are not persistent, so you will need to set them again on the next run.

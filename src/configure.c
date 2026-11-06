@@ -24,105 +24,65 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <ctype.h>
 
 char *get_config_path() {
-    char *path = malloc(PATH_MAX);
-    if (path == NULL) return NULL;
-
     const char *home = getenv("HOME");
-
-    if (home == NULL) {
-        free(path);
-        return NULL;
-    }
-
+    const char suffix[] = "/.config/izumi/config";
+    if (home == NULL || strlen(home) > PATH_MAX - sizeof(suffix)) return NULL;
+    char *path = malloc(strlen(home) + sizeof(suffix));
+    if (path == NULL) return NULL;
     strcpy(path, home);
-
-    if (strlen(path) + strlen("/.config/izumi/config") > PATH_MAX) {
-        free(path);
-        return NULL;
-    }
-
-    strcat(path, "/.config/izumi/config");
-
+    strcat(path, suffix);
     return path;
 }
 
 char **read_config_file(char *path) {
+    if (path == NULL) return NULL;
     FILE *file = fopen(path, "r");
     free(path);
     if (file == NULL) return NULL;
 
-    char **commands = malloc(10 * sizeof(char *)); // Initial allocation for 10 commands
-    int command_count = 0;
-
+    size_t capacity = 10, count = 0;
+    char **commands = malloc(capacity * sizeof(*commands));
     char *line = NULL;
     size_t len = 0;
-
+    if (commands == NULL) { fclose(file); return NULL; }
     while (getline(&line, &len, file) != -1) {
-        // Remove trailing newline character
-        size_t line_length = strlen(line);
-        if (line_length > 0 && line[line_length - 1] == '\n') {
-            line[line_length - 1] = '\0';
+        size_t length = strlen(line);
+        while (length > 0 && (line[length-1] == '\r' || line[length-1] == '\n'))
+            line[--length] = '\0';
+        char *start = line;
+        while (isspace((unsigned char)*start)) ++start;
+        if (*start == '\0' || *start == '#') continue;
+        if (count + 1 == capacity) {
+            if (capacity > SIZE_MAX / sizeof(*commands) / 2) goto failure;
+            char **grown = realloc(commands, capacity * 2 * sizeof(*commands));
+            if (grown == NULL) goto failure;
+            commands = grown;
+            capacity *= 2;
         }
-
-        // Ignore empty lines and comments
-        if (line[0] == '\0' || line[0] == '#') continue;
-
-        // Allocate memory for the command
-        commands[command_count] = malloc((line_length + 1) * sizeof(char));
-        if (commands[command_count] == NULL) {
-            for (int i = 0; i < command_count; i++) {
-                free(commands[i]);
-            }
-            free(commands);
-            return NULL; // Memory allocation failed
-            //fprintf(stderr, "Error: Memory allocation failed\n");
-            //exit(1);
-        }
-
-        strcpy(commands[command_count], line);
-        command_count++;
-
-        // Resize the array if necessary
-        if (command_count % 10 == 0) {
-            commands = realloc(commands, (command_count + 10) * sizeof(char *));
-            if (commands == NULL) {
-                for (int i = 0; i < command_count; i++) {
-                    free(commands[i]);
-                }
-                free(commands);
-
-                return NULL; // Memory reallocation failed
-
-                //fprintf(stderr, "Error: Memory reallocation failed\n");
-                //exit(1);
-            }
-        }
+        commands[count] = strdup(start);
+        if (commands[count] == NULL) goto failure;
+        ++count;
     }
-
+    if (ferror(file)) goto failure;
     free(line);
     fclose(file);
-
-    // Resize the array to the actual number of commands
-    commands = realloc(commands, (command_count + 1) * (sizeof(char *) + 1));
-    if (commands == NULL) {
-        for (int i = 0; i < command_count; i++) {
-            free(commands[i]);
-        }
-        free(commands);
-        return NULL; // Memory reallocation failed
-        //fprintf(stderr, "Error: Memory reallocation failed\n");
-        //exit(1);
-    }
-
-    // Null-terminate the array
-    commands[command_count] = NULL;
+    commands[count] = NULL;
     return commands;
+
+failure:
+    for (size_t i = 0; i < count; ++i) free(commands[i]);
+    free(commands);
+    free(line);
+    fclose(file);
+    return NULL;
 }
 
 bool execute_config_commands(ApplicationData *app_data, char **commands) {
     if (commands == NULL) return false;
+    bool success = true;
 
     for (int i = 0; commands[i] != NULL; i++) {
         char *command = commands[i];
@@ -142,7 +102,11 @@ bool execute_config_commands(ApplicationData *app_data, char **commands) {
         strcpy(app_data->command, command);
 
         // Execute the command
-        run_command(app_data);
+        ErrorKind error = run_command(app_data);
+        if (error != NO_ERROR) {
+            app_data->error = error;
+            success = false;
+        }
     }
 
     for (int j = 0; commands[j] != NULL; j++) {
@@ -150,5 +114,5 @@ bool execute_config_commands(ApplicationData *app_data, char **commands) {
     }
     free(commands);
 
-    return true;
+    return success;
 }

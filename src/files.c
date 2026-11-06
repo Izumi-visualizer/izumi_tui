@@ -25,8 +25,35 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <pwd.h>
 
 #include "files.h"
+
+char *expand_path(const char *in) {
+    if (in == NULL) return NULL;
+    if (in[0] != '~') return strdup(in);
+
+    const char *slash = strchr(in + 1, '/');
+    size_t length = slash ? (size_t)(slash - in - 1) : strlen(in + 1);
+    char user[256];
+    // Never expand a truncated username into a different user's home.
+    if (length >= sizeof(user)) return NULL;
+    memcpy(user, in + 1, length);
+    user[length] = '\0';
+    const char *home;
+    if (length == 0) home = getenv("HOME");
+    else {
+        struct passwd *pw = getpwnam(user);
+        home = pw ? pw->pw_dir : NULL;
+    }
+    if (home == NULL || *home == '\0') return NULL;
+    const char *rest = slash ? slash : "";
+    char *out = malloc(strlen(home) + strlen(rest) + 1);
+    if (out == NULL) return NULL;
+    strcpy(out, home);
+    strcat(out, rest);
+    return out;
+}
 
 
 FileData check_file(const char *path) {
