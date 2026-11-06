@@ -3,9 +3,13 @@ include $(srcdir)/izumi_tui.mk
 
 bin_PROGRAMS = izumi
 izumi_SOURCES = $(izumi_c_sources) $(izumi_headers)
+noinst_LTLIBRARIES = libizumi_tui.la
+libizumi_tui_la_SOURCES = $(izumi_core_sources) $(izumi_headers)
+libizumi_tui_la_CPPFLAGS = $(izumi_CPPFLAGS)
+MOSTLYCLEANFILES = *.gcda *.gcno *.gcov
 
 izumi_CPPFLAGS = -I$(srcdir)/include $(LIBIZUMI_CPPFLAGS) $(CURSES_CFLAGS) 
-izumi_LDADD = $(CURSES_LIBS)
+izumi_LDADD = libizumi_tui.la $(CURSES_LIBS)
 
 if SYSTEM_LIBIZUMI
 izumi_LDADD += -lizumi

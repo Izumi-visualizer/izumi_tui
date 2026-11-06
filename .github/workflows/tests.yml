@@ -1,0 +1,49 @@
+name: TUI regression tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  tests:
+    name: ${{ matrix.sanitizers == 'yes' && 'Sanitizer tests' || 'Regression tests + 100% coverage' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        sanitizers: ["no", "yes"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: Izumi-visualizer/libizumi
+          ref: b8f4c8b9edfacc760bac0087677b1bba03ff0e53
+          path: libizumi-dependency
+      - run: sudo apt-get update && sudo apt-get install -y autoconf automake libtool pkg-config libncurses-dev python3
+      - name: Build pinned libizumi dependency
+        working-directory: libizumi-dependency
+        run: |
+          autoreconf --install
+          ./configure --disable-doxygen-doc --prefix="$RUNNER_TEMP/izumi-deps"
+          make -j2
+          make install
+      - run: autoreconf --install
+      - run: mkdir build
+      - name: Configure
+        working-directory: build
+        run: |
+          if test '${{ matrix.sanitizers }}' = no; then
+            export CFLAGS='-O0 -g --coverage -fprofile-abs-path'
+            export LDFLAGS=--coverage
+          fi
+          ../configure --disable-shared --enable-sanitizers=${{ matrix.sanitizers }} \
+            LIBIZUMI_CPPFLAGS="-I$RUNNER_TEMP/izumi-deps/include" \
+            LIBIZUMI_LDFLAGS="-L$RUNNER_TEMP/izumi-deps/lib -Wl,-rpath,$RUNNER_TEMP/izumi-deps/lib"
+      - run: make -j2 check
+        working-directory: build
+      - name: Require complete executable-line coverage
+        if: matrix.sanitizers == 'no'
+        run: python3 tests/check_coverage.py build
+      - name: Show failure details
+        if: failure()
+        run: cat build/tests/test-suite.log

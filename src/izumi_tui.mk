@@ -1,12 +1,13 @@
-izumi_c_sources = \
+izumi_core_sources = \
     command_tree.c \
     commands.c \
     configure.c \
     files.c \
     interact.c \
-    main.c \
     window.c \
 		utils.c
+
+izumi_c_sources = main.c
 
 izumi_headers = \
     include/autocomplete.h \

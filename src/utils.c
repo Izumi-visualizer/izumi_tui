@@ -26,19 +26,14 @@ bool parse_u64(const char *s, uint64_t *out) {
     char *endptr;
     errno = 0;
 
-    if (s == NULL || *s == '\0') {
+    if (s == NULL || out == NULL || *s < '0' || *s > '9') {
         return false;
     }
 
     unsigned long long tmp = strtoull(s, &endptr, 10);
 
-    /* No se convirtió nada */
-    if (endptr == s) {
-        return false;
-    }
-
     /* Overflow / underflow */
-    if (errno == ERANGE) {
+    if (errno == ERANGE || tmp > UINT64_MAX) {
         return false;
     }
 
@@ -50,4 +45,3 @@ bool parse_u64(const char *s, uint64_t *out) {
     *out = (uint64_t)tmp;
     return true;
 }
-
