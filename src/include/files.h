@@ -38,6 +38,11 @@ typedef struct FileData_s FileData;
  */
 FileData check_file(const char *path);
 
+/* Expand ~ and ~username using HOME and the user database. The caller owns
+ * the returned string. Unknown users, missing HOME and allocation errors
+ * return NULL; ordinary paths are copied unchanged. */
+char *expand_path(const char *path);
+
 /*
  * This function reads a file and stores the data in the tables array.
  *

@@ -32,11 +32,15 @@
 #include "autocomplete.h"
 
 void get_window_data(WindowData *win_data, ApplicationData *app_data) {
+    uint64_t screen_height = getmaxy(stdscr);
     win_data->width = getmaxx(stdscr);
-    win_data->height = (getmaxy(stdscr)-1)/app_data->windows_qtty; // one pixel for the status bar
+    win_data->height = app_data->windows_qtty ?
+        (screen_height > 1 ? screen_height-1 : 1)/app_data->windows_qtty : 1;
+    if (win_data->height == 0) win_data->height = 1;
 
     win_data->x = 0;
     win_data->y = win_data->height * win_data->index;
+    if (win_data->y >= screen_height) win_data->y = screen_height - 1;
 }
 
 void new_window(ApplicationData *app_data) {
@@ -96,6 +100,7 @@ void close_window(WindowData *win_data) {
     }
 
     clear_lane_sources(win_data);
+    free(win_data->timelines);
 
     free(win_data);
     win_data = NULL;
@@ -103,6 +108,7 @@ void close_window(WindowData *win_data) {
 
 void close_application(ApplicationData *app_data) {
     close_all_panels(app_data);
+    free(app_data->command);
 
     endwin();
     exit(0);
@@ -116,6 +122,7 @@ void close_all_panels(ApplicationData *app_data) {
     }
 
     app_data->windows_qtty = 0;
+    app_data->window_focused = 0;
     free(app_data->windows);
     app_data->windows = NULL;
 }
@@ -136,8 +143,15 @@ void close_panel(ApplicationData *app_data, uint64_t panel_id) {
 
         app_data->windows = realloc(app_data->windows, app_data->windows_qtty * sizeof(WindowData *));
 
-        if (app_data->window_focused >= panel_id) {
+        if (app_data->window_focused > panel_id) {
             app_data->window_focused--;
+        }
+        if (app_data->windows_qtty == 0) {
+            free(app_data->windows);
+            app_data->windows = NULL;
+            app_data->window_focused = 0;
+        } else if (app_data->window_focused >= app_data->windows_qtty) {
+            app_data->window_focused = app_data->windows_qtty - 1;
         }
 }
 
@@ -150,19 +164,19 @@ void init_application(ApplicationData *app_data) {
     curs_set(0);
     start_color();
 
-    set_color(app_data, COLOR_COMMANDS, COLOR_BLACK, COLOR_WHITE, false);
-    set_color(app_data, COLOR_BOX, COLOR_BLACK, COLOR_WHITE, false);
-    set_color(app_data, COLOR_TEXT, COLOR_BLACK, COLOR_WHITE, false);
-    set_color(app_data, COLOR_TEXT_BOLD, COLOR_BLACK, COLOR_WHITE, true);
-    set_color(app_data, COLOR_STATUS, COLOR_BLUE, COLOR_BLACK, true);
-    set_color(app_data, COLOR_STAGES + 0, COLOR_BLUE, COLOR_BLACK, true);
-    set_color(app_data, COLOR_STAGES + 1, COLOR_RED, COLOR_BLACK, true);
-    set_color(app_data, COLOR_STAGES + 2, COLOR_GREEN, COLOR_BLACK, true);
-    set_color(app_data, COLOR_STAGES + 3, COLOR_YELLOW, COLOR_BLACK, true);
-    set_color(app_data, COLOR_STAGES + 4, COLOR_MAGENTA, COLOR_BLACK, true);
-    set_color(app_data, COLOR_STAGES + 5, COLOR_CYAN, COLOR_BLACK, true);
-    set_color(app_data, COLOR_ERROR_TEXT, COLOR_BLACK, COLOR_RED, true);
-    set_color(app_data, COLOR_TIMELINE, COLOR_YELLOW, COLOR_BLACK, false);
+    set_color(app_data, COLOR_COMMANDS, COLOR_WHITE, COLOR_BLACK, false);
+    set_color(app_data, COLOR_BOX, COLOR_WHITE, COLOR_BLACK, false);
+    set_color(app_data, COLOR_TEXT, COLOR_WHITE, COLOR_BLACK, false);
+    set_color(app_data, COLOR_TEXT_BOLD, COLOR_WHITE, COLOR_BLACK, true);
+    set_color(app_data, COLOR_STATUS, COLOR_BLACK, COLOR_BLUE, true);
+    set_color(app_data, COLOR_STAGES + 0, COLOR_BLACK, COLOR_BLUE, true);
+    set_color(app_data, COLOR_STAGES + 1, COLOR_BLACK, COLOR_RED, true);
+    set_color(app_data, COLOR_STAGES + 2, COLOR_BLACK, COLOR_GREEN, true);
+    set_color(app_data, COLOR_STAGES + 3, COLOR_BLACK, COLOR_YELLOW, true);
+    set_color(app_data, COLOR_STAGES + 4, COLOR_BLACK, COLOR_MAGENTA, true);
+    set_color(app_data, COLOR_STAGES + 5, COLOR_BLACK, COLOR_CYAN, true);
+    set_color(app_data, COLOR_ERROR_TEXT, COLOR_RED, COLOR_BLACK, true);
+    set_color(app_data, COLOR_TIMELINE, COLOR_BLACK, COLOR_YELLOW, false);
 
     apply_colors(app_data);
 
@@ -346,7 +360,7 @@ void print_instruction(ApplicationData *app_data, WindowData *win_data, Configur
     if (inst != NULL && inst->valid)
         for (uint64_t i = 0; i < inst->qtty_stages; ++i)
             if (inst->stages[i].cycle < *first_cycle) *first_cycle = inst->stages[i].cycle;
-    if (y >= win_data->height-1) return;
+    if (win_data->height < 2 || y >= win_data->height-1) return;
     uint64_t rows = instruction_height(inst);
     if (rows > win_data->height-1-y) rows = win_data->height-1-y;
     print_instruction_rows(app_data, win_data, config, inst, y, *first_cycle, index, 0, rows);
@@ -603,7 +617,7 @@ void render_status_bar(ApplicationData *app_data) {
     mvprintw(getmaxy(stdscr)-1, getmaxx(stdscr) - 7 - length, "Izumi v%s", version);
     disable_colors_app(app_data, COLOR_BOX);
 
-    char *mode;
+    const char *mode = "NORMAL";
 
     switch (app_data->mode) {
         case NORMAL:
@@ -674,7 +688,7 @@ void apply_colors(ApplicationData *app_data) {
     ColorData *colors = app_data->config.colors;
 
     for (uint64_t i = 0; i < COLORS_AMOUNT; ++i) {
-        init_pair(i+1, colors[i].bg, colors[i].fg);
+        init_pair(i+1, colors[i].fg, colors[i].bg);
     }
 }
 

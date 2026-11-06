@@ -52,8 +52,6 @@ int main(int argc, char *argv[]) {
     init_application(&app_data);
 
     if (argc > 1) {
-        int window_index = 0;
-
         for (int i = 1; i < argc; ++i) {
             new_window(&app_data);
 
@@ -62,12 +60,12 @@ int main(int argc, char *argv[]) {
             FileData file_data = check_file(path);
 
             if (file_data.exists && file_data.is_file) {
-                app_data.windows[window_index]->filename = read_file(argv[i], app_data.windows[window_index]->tables_array);
+                WindowData *window = app_data.windows[app_data.window_focused];
+                window->filename = read_file(argv[i], window->tables_array);
             }
 
             free(path);
             path = NULL;
-            ++window_index;
         }
     }
 

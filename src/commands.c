@@ -48,6 +48,8 @@ ErrorKind newpanel_cb(ApplicationData *app_data) {
 
 ErrorKind closepanel_cb(ApplicationData *app_data, const int argc, const char * argv[]) {
     uint64_t panel_id;
+    if (argc > 1) return ERROR_WRONG_AMOUNT_ARGS;
+    if (app_data->windows == NULL) return ERROR_NO_WINDOW;
 
     if (argc == 1) {
         if (!parse_u64(argv[0], &panel_id)) return ERROR_WRONG_ARGS;
@@ -56,6 +58,7 @@ ErrorKind closepanel_cb(ApplicationData *app_data, const int argc, const char * 
         panel_id = app_data->window_focused;
     }
 
+    if (panel_id >= app_data->windows_qtty) return ERROR_IDX_BIGGER;
     close_panel(app_data, panel_id);
 
     return NO_ERROR;
@@ -74,14 +77,15 @@ ErrorKind open_cb(ApplicationData *app_data, const char * argv[]) {
         new_window(app_data);
     }
 
-    char *path = realpath(file_name, NULL);
+    char *expanded = expand_path(file_name);
+    if (expanded == NULL) return ERROR_FILE_NOT_EXISTS;
+    char *path = realpath(expanded, NULL);
+    free(expanded);
     FileData file_data = check_file(path);
-    free(path);
-    path = NULL;
 
-    if (!file_data.exists) return ERROR_FILE_NOT_EXISTS;
+    if (!file_data.exists) { free(path); return ERROR_FILE_NOT_EXISTS; }
 
-    if (!file_data.is_file) return ERROR_NOT_A_FILE;
+    if (!file_data.is_file) { free(path); return ERROR_NOT_A_FILE; }
 
 
     if (app_data->windows[app_data->window_focused]->filename != NULL) {
@@ -89,8 +93,17 @@ ErrorKind open_cb(ApplicationData *app_data, const char * argv[]) {
     }
 
     clear_lane_sources(app_data->windows[app_data->window_focused]);
-    app_data->windows[app_data->window_focused]->filename = read_file(file_name, app_data->windows[app_data->window_focused]->tables_array);
+    free(app_data->windows[app_data->window_focused]->last_search.pattern);
+    app_data->windows[app_data->window_focused]->last_search.pattern = NULL;
+    WindowData *window = app_data->windows[app_data->window_focused];
+    window->filename = read_file(path, window->tables_array);
+    free(path);
+    // Keep the name the user typed even when a symlink or tilde was resolved.
+    free(window->filename);
+    window->filename = file_basename(file_name);
     app_data->windows[app_data->window_focused]->first_subrow = 0;
+    app_data->windows[app_data->window_focused]->first_instruction = 0;
+    app_data->windows[app_data->window_focused]->first_cycle = 0;
     return NO_ERROR;
 }
 
@@ -101,7 +114,10 @@ ErrorKind attach_cb(ApplicationData *app_data, const char * argv[]) {
     if (win_data->tables_array == NULL || win_data->tables_array->tables == NULL)
         return ERROR_NO_TRACE_OPEN;
 
-    char *path = realpath(argv[0], NULL);
+    char *expanded = expand_path(argv[0]);
+    if (expanded == NULL) return ERROR_FILE_NOT_EXISTS;
+    char *path = realpath(expanded, NULL);
+    free(expanded);
     FileData file_data = check_file(path);
     if (!file_data.exists) { free(path); return ERROR_FILE_NOT_EXISTS; }
     if (!file_data.is_file) { free(path); return ERROR_NOT_A_FILE; }
@@ -121,6 +137,7 @@ ErrorKind attach_cb(ApplicationData *app_data, const char * argv[]) {
 }
 
 ErrorKind panelcmd_j_cb(ApplicationData *app_data) {
+    if (app_data->windows_qtty == 0) return ERROR_NO_WINDOW;
     if (app_data->window_focused < app_data->windows_qtty - 1) {
         app_data->window_focused++;
     }
@@ -129,6 +146,7 @@ ErrorKind panelcmd_j_cb(ApplicationData *app_data) {
 }
 
 ErrorKind panelcmd_k_cb(ApplicationData *app_data) {
+    if (app_data->windows_qtty == 0) return ERROR_NO_WINDOW;
     if (app_data->window_focused > 0) {
         app_data->window_focused--;
     }
@@ -137,6 +155,7 @@ ErrorKind panelcmd_k_cb(ApplicationData *app_data) {
 }
 
 ErrorKind set_cb(ApplicationData *app_data, const int argc, const char *argv[]) {
+    if (argc == 0) return ERROR_WRONG_AMOUNT_ARGS;
     const char *config = argv[0];
 
     if (strcmp(config, "bar_offset") == 0) { // :set bar_offset (number)
@@ -212,10 +231,10 @@ ErrorKind set_cb(ApplicationData *app_data, const int argc, const char *argv[]) 
         else if (strcmp(bg, "magenta") == 0) set_bg = COLOR_MAGENTA;
         else return ERROR_WRONG_ARGS;
 
-        set_color(app_data, color_idx, set_bg, set_fg, set_bold);
+        set_color(app_data, color_idx, set_fg, set_bg, set_bold);
         apply_colors(app_data);
     }
-
+    else return ERROR_WRONG_ARGS;
 
     return NO_ERROR;
 }
@@ -286,10 +305,11 @@ ErrorKind findinst_cb(ApplicationData *app_data, const char * argv[]) {
 ErrorKind next_cb(ApplicationData *app_data) {
     if (app_data->windows == NULL) return ERROR_NO_WINDOW;
 
-    if (app_data->windows[app_data->window_focused]->last_search.pattern == NULL) return false;
+    if (app_data->windows[app_data->window_focused]->last_search.pattern == NULL) return ERROR_NO_RESULT;
 
     char *pattern = app_data->windows[app_data->window_focused]->last_search.pattern;
 
+    if (app_data->windows[app_data->window_focused]->first_instruction == UINT64_MAX) return ERROR_NO_RESULT;
     FindResult result = find(app_data->windows[app_data->window_focused]->tables_array, pattern, app_data->windows[app_data->window_focused]->last_search.data_kind, DOWN, app_data->windows[app_data->window_focused]->first_instruction + 1);
     if (!result.valid) return ERROR_NO_RESULT;
 
@@ -302,11 +322,11 @@ ErrorKind next_cb(ApplicationData *app_data) {
 ErrorKind prev_cb(ApplicationData *app_data) {
     if (app_data->windows == NULL) return ERROR_NO_WINDOW;
 
-    if (app_data->windows[app_data->window_focused]->last_search.pattern == NULL) return false;
+    if (app_data->windows[app_data->window_focused]->last_search.pattern == NULL) return ERROR_NO_RESULT;
 
     char *pattern = app_data->windows[app_data->window_focused]->last_search.pattern;
 
-    if (app_data->windows[app_data->window_focused]->first_instruction <= 0) return false;
+    if (app_data->windows[app_data->window_focused]->first_instruction == 0) return ERROR_NO_RESULT;
 
     FindResult result = find(app_data->windows[app_data->window_focused]->tables_array, pattern, app_data->windows[app_data->window_focused]->last_search.data_kind, UP, app_data->windows[app_data->window_focused]->first_instruction - 1);
     if (!result.valid) return ERROR_NO_RESULT;
@@ -371,7 +391,7 @@ ErrorKind removetimeline_cb(ApplicationData *app_data, const char *argv[]) {
         new_timelines[i] = win_data->timelines[i];
     }
 
-    for (uint64_t i = timeline_idx + 1; i < win_data->timelines_amount - 1; i++) {
+    for (uint64_t i = timeline_idx + 1; i < win_data->timelines_amount; i++) {
         new_timelines[i-1] = win_data->timelines[i];
     }
     win_data->timelines_amount--;
@@ -442,44 +462,6 @@ static int tokenize_command(const char *command, char **tokens, int max_tokens) 
 
 static void free_tokens(char **tokens, int argc) {
     for (int i = 0; i < argc; ++i) free(tokens[i]);
-}
-
-// Expand leading ~ in a simple way. Returns malloc'd string or NULL on error.
-static char *expand_path(const char *in) {
-    if (in == NULL) return NULL;
-
-    // Handle leading ~
-    if (in[0] == '~') {
-        const char *rest = in + 1;
-        const char *slash = strchr(rest, '/');
-        char user[256] = {0};
-        if (slash == NULL) {
-            strncpy(user, rest, sizeof(user)-1);
-            rest = "";
-        } else {
-            size_t ulen = slash - rest;
-            if (ulen >= sizeof(user)) ulen = sizeof(user)-1;
-            memcpy(user, rest, ulen);
-            user[ulen] = '\0';
-            rest = slash;
-        }
-
-        const char *home = NULL;
-        if (user[0] == '\0') {
-            home = getenv("HOME");
-        } else {
-            struct passwd *pw = getpwnam(user);
-            if (pw != NULL) home = pw->pw_dir;
-        }
-        if (home == NULL) return strdup(in); // leave unchanged if we can't expand
-
-        char *out = malloc(strlen(home) + strlen(rest) + 1);
-        strcpy(out, home);
-        strcat(out, rest);
-        return out;
-    }
-
-    return strdup(in);
 }
 
 // Filesystem completion: given token, return malloc'd remainder (or NULL)
@@ -588,8 +570,9 @@ char *compute_autocomplete_suggestion(ApplicationData *app_data) {
             matched = true;
             // descend for subcommand
             if (current_commands[i].type == COMMAND_TYPE_SUBCOMMAND) {
-                current_commands = current_commands[i].subcommand.subcommands;
-                current_len = current_commands[i].subcommand.subcommands_length; // note: using previous i is fine
+                const Command *node = &current_commands[i];
+                current_commands = node->subcommand.subcommands;
+                current_len = node->subcommand.subcommands_length;
                 break;
             } else {
                 // leaf command (no subcommands): remaining tokens are arguments
@@ -599,12 +582,8 @@ char *compute_autocomplete_suggestion(ApplicationData *app_data) {
             }
         }
         if (!matched) {
-            // unmatched root token means no suggestions; deeper tokens are arguments
-            if (idx == 0) {
-                free_tokens(tokens, argc);
-                return NULL;
-            }
-            break;
+            free_tokens(tokens, argc);
+            return NULL;
         }
         idx++;
         if (current_commands == NULL) break;
@@ -712,23 +691,10 @@ char *compute_autocomplete_suggestion(ApplicationData *app_data) {
         return NULL;
     }
 
-    // Not inside a command node list (leaf command reached): nothing generic to complete
-    if (current_len == 0) {
-        free_tokens(tokens, argc);
-        return NULL;
-    }
-
-    // Default: try to complete among available commands at this node
-    for (size_t i = 0; i < current_len; ++i) {
-        if (starts_with(current_commands[i].cmd, partial)) {
-            result = malloc(strlen(current_commands[i].cmd) - strlen(partial) + 1);
-            strcpy(result, current_commands[i].cmd + strlen(partial));
-            break;
-        }
-    }
-
+    // All command positions have been handled above. Extra arguments to a
+    // leaf command must not be completed as another panel subcommand.
     free_tokens(tokens, argc);
-    return result;
+    return NULL;
 }
 
 // Accept the suggestion by appending it to the command buffer

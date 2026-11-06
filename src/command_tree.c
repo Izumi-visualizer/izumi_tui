@@ -28,7 +28,7 @@ int command_arg_count(const char * command) {
 
     for (int i = 0; command[i] != '\0'; ++i) {
         bool on_whitespace_before = on_whitespace;
-        on_whitespace = isspace(command[i]);
+        on_whitespace = isspace((unsigned char)command[i]);
 
         // This handles repeated whitespace
         if (on_whitespace && !on_whitespace_before) ++argc;
@@ -45,13 +45,13 @@ void split_command_arguments(char * command, int argc, char * argv[]) {
 
     for (int i = 0; i < argc+1; ++i) {
         // Skip leading whitespace
-        while (isspace(*command_iter)) ++command_iter;
+        while (isspace((unsigned char)*command_iter)) ++command_iter;
 
         // Save the command or argument start
         argv[i] = command_iter;
 
         // Skip to trailing whitespace or string end
-        while (*command_iter != '\0' && !isspace(*command_iter)) ++command_iter;
+        while (*command_iter != '\0' && !isspace((unsigned char)*command_iter)) ++command_iter;
 
         // Replace the whitespace with a null character to split the string
         *command_iter = '\0';
@@ -71,7 +71,7 @@ ErrorKind traverse_command_tree(ApplicationData *app_data, const Command command
         case COMMAND_TYPE_ARGLIST:
             return command->arglist.callback(app_data, argc, argv);
         case COMMAND_TYPE_FIXED_ARGLIST:
-            if (argc != command->fixed_arglist.argc) return false;
+            if (argc != command->fixed_arglist.argc) return ERROR_WRONG_AMOUNT_ARGS;
             return command->fixed_arglist.callback(app_data, argv);
         case COMMAND_TYPE_NO_ARGS:
             if (argc != 0) return ERROR_WRONG_AMOUNT_ARGS;
@@ -89,6 +89,7 @@ ErrorKind traverse_command_tree(ApplicationData *app_data, const Command command
 }
 
 ErrorKind run_command(ApplicationData *app_data) {
+    if (app_data->command == NULL) return ERROR_EMPTY_COMMAND;
     char command[strlen(app_data->command) + 1];
     strcpy(command, app_data->command);
 
