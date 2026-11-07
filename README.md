@@ -23,6 +23,7 @@ Izumi is a multi-format instruction pipeline dump TUI visualizer based on [shioy
 - `libizumi` (can be built alongside `izumi_tui`)
 - `make` (build only)
 - `autotools` (build from source only, not needed in distribution packages)
+- `gettext` tools (`msgfmt`, build only, optional: without them translations are not installed)
 
 ## Building (and installing)
 
@@ -44,6 +45,7 @@ make
 
 Some intersting `configure` flags:
 - `--without-system-libizumi` to build libizumi alongside izumi_tui (libizumi sources must be placed or linked in a `libizumi` directory next to the `configure` script)
+- `--disable-nls` to build without translations
 - `--enable-sanitizers` to enable ASAN (not recommended if you aren't actively developing Izumi!)
 - `--help` to see more options!
 
@@ -70,6 +72,9 @@ After configuring a build directory, run `make check`. The suite includes:
   unavailable, only the PTY test is skipped; C tests still run.
 - Path tests for `~`, `~/…`, `~username` and `~username/…`, including completion,
   opening/attaching, unknown users, missing HOME and overlong usernames.
+- Translation tests that check the Spanish and Catalan catalogs and the
+  translated status bar and panel labels. They need `msgfmt` and the
+  `es_ES.UTF-8` and `ca_ES.UTF-8` locales, and are skipped otherwise.
 - Controlled allocation-failure tests for configuration cleanup and path
   expansion. These use GNU-compatible linker wrapping to fail application
   allocations without affecting libc, ncurses or sanitizer allocations.
@@ -109,7 +114,7 @@ python3 ../tests/check_coverage.py .
 tests and installation/uninstallation.
 
 Local GCC coverage verification exercises all 75 implemented functions and
-all 1,199 executable source lines (100%). The normal CI job checks this target
+all 1,208 executable source lines (100%). The normal CI job checks this target
 with `tests/check_coverage.py`; a newly uncovered line or function fails it.
 The coverage checker requires Python 3 and a GCC/gcov version supporting JSON
 output. Line coverage does not imply 100% branch coverage or every possible
@@ -130,6 +135,22 @@ make run ARGS=path/to/file
 
 > [!IMPORTANT]
 > If sanitizers are enabled, an `AddressSanitizer:DEADLYSIGNAL` error can be raised randomly when starting the program. Just kill the program and try again. If it persists, please report it.
+
+### Languages
+
+Izumi is available in English, Spanish and Catalan. The language follows the
+usual locale environment variables (`LANGUAGE`, `LC_ALL`, `LC_MESSAGES`,
+`LANG`), for example:
+
+```sh
+LANG=ca_ES.UTF-8 izumi trace.log
+```
+
+Commands and their arguments (`:open`, `:set show_empty_rows on`, ...) are the
+same in every language.
+
+Translations live in `po/`. After changing translatable strings, refresh the
+catalogs with `make -C po update-po` (needs `xgettext` and `msgmerge`).
 
 ### Commands
 

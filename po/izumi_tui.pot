@@ -1,0 +1,114 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the izumi_tui package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: izumi_tui 0.2.1\n"
+"Report-Msgid-Bugs-To: https://github.com/Izumi-visualizer/izumi_tui/issues\n"
+"POT-Creation-Date: 2026-11-09 10:08+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/include/error.h:45
+msgid "Wrong command"
+msgstr ""
+
+#: src/include/error.h:46
+msgid "Empty command"
+msgstr ""
+
+#: src/include/error.h:47
+msgid "Wrong amount of arguments on the command"
+msgstr ""
+
+#: src/include/error.h:48
+msgid "Wrong arguments on the command"
+msgstr ""
+
+#: src/include/error.h:49
+msgid "Command with subcommands empty"
+msgstr ""
+
+#: src/include/error.h:50
+msgid "Error on execution of command"
+msgstr ""
+
+#: src/include/error.h:51
+msgid "File does not exist"
+msgstr ""
+
+#: src/include/error.h:52
+msgid "File is not a file"
+msgstr ""
+
+#: src/include/error.h:53
+msgid "No window created"
+msgstr ""
+
+#: src/include/error.h:54
+msgid "No trace open on the focused panel"
+msgstr ""
+
+#: src/include/error.h:55
+msgid "No result on the search"
+msgstr ""
+
+#: src/include/error.h:56
+msgid "Index is bigger than array"
+msgstr ""
+
+#: src/main.c:32
+#, c-format
+msgid "Usage: %s [OPTION]... [FILE]...\n"
+msgstr ""
+
+#: src/main.c:33
+msgid "Open one or more instruction traces in an interactive TUI.\n"
+msgstr ""
+
+#: src/main.c:35
+msgid ""
+"  -h, --help     display this help and exit\n"
+"  -v, --version  display version information and exit\n"
+msgstr ""
+
+#: src/window.c:266
+#, c-format
+msgid "Lane %lu"
+msgstr ""
+
+#: src/window.c:551
+#, c-format
+msgid "Timeline %lu at cycle %lu"
+msgstr ""
+
+#. TRANSLATORS: name of the mode shown in the status bar.
+#: src/window.c:627
+msgid "NORMAL"
+msgstr ""
+
+#. TRANSLATORS: name of the mode shown in the status bar.
+#: src/window.c:631
+msgid "COMMAND"
+msgstr ""
+
+#: src/window.c:646
+#, c-format
+msgid "Empty rows: %s"
+msgstr ""
+
+#: src/window.c:647
+msgid "on"
+msgstr ""
+
+#: src/window.c:647
+msgid "off"
+msgstr ""

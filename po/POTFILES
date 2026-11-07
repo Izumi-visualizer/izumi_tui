@@ -1,0 +1,3 @@
+src/include/error.h
+src/main.c
+src/window.c
