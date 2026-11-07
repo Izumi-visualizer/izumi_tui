@@ -1,6 +1,7 @@
 { lib
 , stdenv
 , autoreconfHook
+, gettext
 , pkgconf
 , gnumake
 , libizumi
@@ -16,6 +17,7 @@ stdenv.mkDerivation rec {
 
   nativeBuildInputs = [
     autoreconfHook
+    gettext
     gnumake
     pkgconf
     python3

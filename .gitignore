@@ -1,4 +1,5 @@
 # Izumi specific
+*.mo
 *.out
 output*
 /libizumi

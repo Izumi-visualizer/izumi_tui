@@ -1,4 +1,4 @@
-SUBDIRS = $(subdirs_extra) src tests
+SUBDIRS = $(subdirs_extra) src po tests
 
 EXTRA_DIST = LICENSE
 

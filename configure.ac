@@ -58,6 +58,33 @@ if test "x$ax_cv_curses" != xyes || test "x$ax_cv_curses_color" != xyes; then
     AC_MSG_ERROR([requires an X/Open-compatible Curses library with color])
 fi
 
+# Native Language Support through gettext/libintl (part of glibc; other C
+# libraries may provide it in a separate libintl).
+AC_ARG_ENABLE([nls],
+    [AS_HELP_STRING([--disable-nls], [do not translate program messages])],
+    [],
+    [enable_nls=yes]
+)
+AS_IF([test "x$enable_nls" = xyes], [
+    AC_CHECK_HEADER([libintl.h], [], [enable_nls=no])
+])
+AS_IF([test "x$enable_nls" = xyes], [
+    AC_SEARCH_LIBS([bindtextdomain], [intl], [], [enable_nls=no])
+])
+AS_IF([test "x$enable_nls" = xyes], [
+    AC_DEFINE([ENABLE_NLS], [1], [Define to 1 to translate program messages])
+])
+AC_MSG_CHECKING([whether to translate program messages])
+AC_MSG_RESULT([$enable_nls])
+
+AC_PATH_PROG([MSGFMT], [msgfmt], [no])
+AC_PATH_PROG([XGETTEXT], [xgettext], [no])
+AC_PATH_PROG([MSGMERGE], [msgmerge], [no])
+AS_IF([test "x$enable_nls" = xyes && test "x$MSGFMT" = xno], [
+    AC_MSG_WARN([msgfmt not found, translations will not be compiled nor installed])
+])
+AM_CONDITIONAL([BUILD_MO], [test "x$enable_nls" = xyes && test "x$MSGFMT" != xno])
+
 AX_CONFIG_FEATURE_VERBOSE
 AX_CONFIG_FEATURE_DEFAULT_DISABLED
 AX_CONFIG_FEATURE(
@@ -71,6 +98,7 @@ AX_CONFIG_FEATURE(
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
     Makefile
+    po/Makefile
     src/Makefile
     tests/Makefile
 ])

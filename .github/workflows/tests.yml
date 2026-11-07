@@ -19,7 +19,9 @@ jobs:
           repository: Izumi-visualizer/libizumi
           ref: b8f4c8b9edfacc760bac0087677b1bba03ff0e53
           path: libizumi-dependency
-      - run: sudo apt-get update && sudo apt-get install -y autoconf automake libtool pkg-config libncurses-dev python3
+      - run: sudo apt-get update && sudo apt-get install -y autoconf automake libtool pkg-config libncurses-dev python3 gettext locales
+      - name: Generate locales for the translation tests
+        run: sudo locale-gen es_ES.UTF-8 ca_ES.UTF-8
       - name: Build pinned libizumi dependency
         working-directory: libizumi-dependency
         run: |
