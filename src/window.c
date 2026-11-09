@@ -31,6 +31,7 @@
 #include "configure.h"
 #include "error.h"
 #include "autocomplete.h"
+#include "i18n.h"
 
 void get_window_data(WindowData *win_data, ApplicationData *app_data) {
     uint64_t screen_height = getmaxy(stdscr);
@@ -311,9 +312,10 @@ static void print_truncated(WINDOW *win, int y, int x, const char *text, int max
 }
 
 static void lane_label(WindowData *win_data, LaneId lane, char *buffer, size_t size) {
-    if (lane.source == 0)
-        snprintf(buffer, size, "  Lane %lu", lane.lane);
-    else if (lane.source <= win_data->lane_sources_amount &&
+    if (lane.source == 0) {
+        int n = snprintf(buffer, size, "  ");
+        snprintf(buffer + n, size - n, _("Lane %lu"), lane.lane);
+    } else if (lane.source <= win_data->lane_sources_amount &&
              win_data->lane_sources[lane.source-1] != NULL)
         snprintf(buffer, size, "  %s:%lu",
                  win_data->lane_sources[lane.source-1], lane.lane);
@@ -601,7 +603,7 @@ void render_window(ApplicationData *app_data, WindowData *win_data) {
     for (uint64_t i = 0; i < shown_timelines; ++i) {
         uint64_t cycle_timeline = win_data->timelines[i];
 
-        mvwprintw(win_data->win, init_line_timelines + i, 1, "Timeline %lu at cycle %lu", i, cycle_timeline);
+        mvwprintw(win_data->win, init_line_timelines + i, 1, _("Timeline %lu at cycle %lu"), i, cycle_timeline);
 
         if (app_data->config.bar_offset + 1 < win_data->width &&
             app_data->config.stage_width > 0 && app_data->config.stage_width < UINT64_MAX &&
@@ -676,27 +678,38 @@ void render_status_bar(ApplicationData *app_data) {
 
     switch (app_data->mode) {
         case NORMAL:
-            mode = "NORMAL";
+            /* TRANSLATORS: name of the mode shown in the status bar. */
+            mode = _("NORMAL");
             break;
         case COMMAND:
-            mode = "COMMAND";
+            /* TRANSLATORS: name of the mode shown in the status bar. */
+            mode = _("COMMAND");
             break;
     }
+
+    /* The command line and errors start after " <mode> " plus two spaces;
+     * measure in characters so translated mode names may be non-ASCII. */
+    size_t mode_width = mbstowcs(NULL, mode, 0);
+    if (mode_width == (size_t) -1) mode_width = strlen(mode);
+    int command_col = mode_width + 4;
 
     enable_colors_app(app_data, COLOR_STATUS);
     mvprintw(getmaxy(stdscr)-1, 0, " %s ", mode);
     /* The error message is printed over this, so skip it then. */
-    if (app_data->mode == NORMAL && app_data->error == NO_ERROR)
-        printw(" Empty rows: %s", app_data->config.show_empty_rows ? "on" : "off");
+    if (app_data->mode == NORMAL && app_data->error == NO_ERROR) {
+        printw(" ");
+        printw(_("Empty rows: %s"),
+               app_data->config.show_empty_rows ? _("on") : _("off"));
+    }
     disable_colors_app(app_data, COLOR_STATUS);
 
     if (app_data->mode == COMMAND) {
         enable_colors_app(app_data, COLOR_COMMANDS);
-        mvprintw(getmaxy(stdscr)-1, 11, ":%s", app_data->command);
+        mvprintw(getmaxy(stdscr)-1, command_col, ":%s", app_data->command);
         /* show inline suggestion in dim color */
         char *suggestion = compute_autocomplete_suggestion(app_data);
         if (suggestion != NULL) {
-            int col = 11 + 1 + strlen(app_data->command); // 11 is where ":" is printed
+            int col = command_col + 1 + strlen(app_data->command);
             attron(A_DIM);
             mvprintw(getmaxy(stdscr)-1, col, "%s", suggestion);
             attroff(A_DIM);
@@ -707,7 +720,7 @@ void render_status_bar(ApplicationData *app_data) {
 
     if (app_data->error != NO_ERROR) {
         enable_colors_app(app_data, COLOR_ERROR_TEXT);
-        mvprintw(getmaxy(stdscr)-1, strlen(mode) + 4, "%s", error_msg[app_data->error]);
+        mvprintw(getmaxy(stdscr)-1, command_col, "%s", _(error_msg[app_data->error]));
         disable_colors_app(app_data, COLOR_ERROR_TEXT);
         
 

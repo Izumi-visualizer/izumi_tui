@@ -18,6 +18,8 @@
 #ifndef ERROR_H
 #define ERROR_H
 
+#include "i18n.h"
+
 enum ErrorKind_e {
     ERORR_WRONG_COMMAND = 0,
     ERROR_EMPTY_COMMAND,
@@ -38,19 +40,20 @@ enum ErrorKind_e {
 
 typedef enum ErrorKind_e ErrorKind;
 
+/* Translated with _() where displayed. */
 static char *error_msg[ERRORS_AMOUNT] = {
-    "Wrong command",
-    "Empty command",
-    "Wrong amount of arguments on the command",
-    "Wrong arguments on the command",
-    "Command with subcommands empty",
-    "Error on execution of command",
-    "File does not exist",
-    "File is not a file",
-    "No window created",
-    "No trace open on the focused panel",
-    "No result on the search",
-    "Index is bigger than array",
+    N_("Wrong command"),
+    N_("Empty command"),
+    N_("Wrong amount of arguments on the command"),
+    N_("Wrong arguments on the command"),
+    N_("Command with subcommands empty"),
+    N_("Error on execution of command"),
+    N_("File does not exist"),
+    N_("File is not a file"),
+    N_("No window created"),
+    N_("No trace open on the focused panel"),
+    N_("No result on the search"),
+    N_("Index is bigger than array"),
 };
 
 #endif

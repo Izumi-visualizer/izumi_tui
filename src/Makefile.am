@@ -8,7 +8,8 @@ libizumi_tui_la_SOURCES = $(izumi_core_sources) $(izumi_headers)
 libizumi_tui_la_CPPFLAGS = $(izumi_CPPFLAGS)
 MOSTLYCLEANFILES = *.gcda *.gcno *.gcov
 
-izumi_CPPFLAGS = -I$(srcdir)/include $(LIBIZUMI_CPPFLAGS) $(CURSES_CFLAGS) 
+izumi_CPPFLAGS = -I$(srcdir)/include $(LIBIZUMI_CPPFLAGS) $(CURSES_CFLAGS) \
+    -DLOCALEDIR='"$(localedir)"'
 izumi_LDADD = libizumi_tui.la $(CURSES_LIBS)
 
 if SYSTEM_LIBIZUMI

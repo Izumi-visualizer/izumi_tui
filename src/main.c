@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <locale.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <linux/limits.h>
@@ -25,17 +26,24 @@
 #include "config.h"
 #include "window.h"
 #include "files.h"
+#include "i18n.h"
 
 static void print_help(const char *program) {
-    printf("Usage: %s [OPTION]... [FILE]...\n", program);
-    printf("Open one or more instruction traces in an interactive TUI.\n");
-    printf("\n");
-    printf("  -h, --help     display this help and exit\n");
-    printf("  -v, --version  display version information and exit\n");
+    printf(_("Usage: %s [OPTION]... [FILE]...\n"), program);
+    fputs(_("Open one or more instruction traces in an interactive TUI.\n"), stdout);
+    fputs("\n", stdout);
+    fputs(_("  -h, --help     display this help and exit\n"
+            "  -v, --version  display version information and exit\n"), stdout);
 }
 
 int main(int argc, char *argv[]) {
     ApplicationData app_data;
+
+    setlocale(LC_ALL, "");
+    /* Keep number parsing and formatting locale-independent. */
+    setlocale(LC_NUMERIC, "C");
+    bindtextdomain(PACKAGE, LOCALEDIR);
+    textdomain(PACKAGE);
 
     for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {

@@ -15,6 +15,7 @@ izumi_headers = \
     include/commands.h \
     include/configure.h \
     include/files.h \
+    include/i18n.h \
     include/interact.h \
     include/system_curses.h \
     include/error.h \

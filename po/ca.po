@@ -1,0 +1,114 @@
+# Catalan translation for izumi_tui.
+# This file is distributed under the same license as the izumi_tui package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: izumi_tui 0.2.1\n"
+"Report-Msgid-Bugs-To: https://github.com/Izumi-visualizer/izumi_tui/issues\n"
+"POT-Creation-Date: 2026-11-09 10:08+0100\n"
+"PO-Revision-Date: 2026-11-05 00:00+0100\n"
+"Last-Translator: Marc Marcos\n"
+"Language-Team: Catalan <ca@li.org>\n"
+"Language: ca\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: src/include/error.h:45
+msgid "Wrong command"
+msgstr "Ordre incorrecta"
+
+#: src/include/error.h:46
+msgid "Empty command"
+msgstr "Ordre buida"
+
+#: src/include/error.h:47
+msgid "Wrong amount of arguments on the command"
+msgstr "Nombre incorrecte d'arguments a l'ordre"
+
+#: src/include/error.h:48
+msgid "Wrong arguments on the command"
+msgstr "Arguments incorrectes a l'ordre"
+
+#: src/include/error.h:49
+msgid "Command with subcommands empty"
+msgstr "Ordre amb subordres buida"
+
+#: src/include/error.h:50
+msgid "Error on execution of command"
+msgstr "Error en executar l'ordre"
+
+#: src/include/error.h:51
+msgid "File does not exist"
+msgstr "El fitxer no existeix"
+
+#: src/include/error.h:52
+msgid "File is not a file"
+msgstr "El camí no és un fitxer normal"
+
+#: src/include/error.h:53
+msgid "No window created"
+msgstr "No s'ha creat cap finestra"
+
+#: src/include/error.h:54
+msgid "No trace open on the focused panel"
+msgstr "No hi ha cap traça oberta al panell actiu"
+
+#: src/include/error.h:55
+msgid "No result on the search"
+msgstr "La cerca no ha donat resultats"
+
+#: src/include/error.h:56
+msgid "Index is bigger than array"
+msgstr "L'índex supera la mida del vector"
+
+#: src/main.c:32
+#, c-format
+msgid "Usage: %s [OPTION]... [FILE]...\n"
+msgstr "Ús: %s [OPCIÓ]... [FITXER]...\n"
+
+#: src/main.c:33
+msgid "Open one or more instruction traces in an interactive TUI.\n"
+msgstr "Obre una o més traces d'instruccions en una TUI interactiva.\n"
+
+#: src/main.c:35
+msgid ""
+"  -h, --help     display this help and exit\n"
+"  -v, --version  display version information and exit\n"
+msgstr ""
+"  -h, --help     mostra aquesta ajuda i surt\n"
+"  -v, --version  mostra la informació de la versió i surt\n"
+
+#: src/window.c:266
+#, c-format
+msgid "Lane %lu"
+msgstr "Carril %lu"
+
+#: src/window.c:551
+#, c-format
+msgid "Timeline %lu at cycle %lu"
+msgstr "Línia temporal %lu, cicle %lu"
+
+#. TRANSLATORS: name of the mode shown in the status bar.
+#: src/window.c:627
+msgid "NORMAL"
+msgstr "NORMAL"
+
+#. TRANSLATORS: name of the mode shown in the status bar.
+#: src/window.c:631
+msgid "COMMAND"
+msgstr "ORDRE"
+
+#: src/window.c:646
+#, c-format
+msgid "Empty rows: %s"
+msgstr "Files buides: %s"
+
+#: src/window.c:647
+msgid "on"
+msgstr "sí"
+
+#: src/window.c:647
+msgid "off"
+msgstr "no"
