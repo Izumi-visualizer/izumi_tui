@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wchar.h>
 #include <unistd.h>
 #include <stdint.h>
 
@@ -258,6 +259,56 @@ static uint64_t instruction_height(Instruction *inst) {
     uint64_t count = instruction_lanes(inst, &lanes);
     free(lanes);
     return count > 1 ? count + 1 : 2;
+}
+
+/* Byte length of each character as curses will draw it in the current
+ * locale; bytes that are not a valid character are drawn one by one. */
+static size_t char_bytes(const char *s, mbstate_t *state) {
+    size_t n = mbrlen(s, MB_CUR_MAX, state);
+    if (n == 0 || n > MB_CUR_MAX) { /* invalid or incomplete sequence */
+        memset(state, 0, sizeof(*state));
+        return 1;
+    }
+    return n;
+}
+
+/* Number of characters in `s`. */
+static size_t text_chars(const char *s) {
+    mbstate_t state = { 0 };
+    size_t chars = 0;
+    for (size_t i = 0; s[i] != '\0'; i += char_bytes(s + i, &state)) ++chars;
+    return chars;
+}
+
+/* Byte offset of the `n`-th character of `s`. */
+static size_t text_offset(const char *s, size_t n) {
+    mbstate_t state = { 0 };
+    size_t i = 0;
+    for (; s[i] != '\0' && n > 0; --n) i += char_bytes(s + i, &state);
+    return i;
+}
+
+/* Prints `text` at (y, x) using at most `max` columns. Text that does not
+ * fit is shortened in the middle with "..." so both its start and its end
+ * (usually the distinguishing part of a file name) stay visible. */
+static void print_truncated(WINDOW *win, int y, int x, const char *text, int max) {
+    size_t chars = text_chars(text);
+
+    if (max <= 0) return;
+
+    if (chars <= (size_t) max) {
+        mvwaddstr(win, y, x, text);
+    } else if (max <= 3) {
+        mvwaddnstr(win, y, x, text, text_offset(text, max));
+    } else {
+        size_t keep = max - 3;
+        size_t head = text_offset(text, (keep + 1) / 2);
+        size_t tail = text_offset(text, chars - keep / 2);
+
+        mvwaddnstr(win, y, x, text, head);
+        waddstr(win, "...");
+        waddstr(win, text + tail);
+    }
 }
 
 static void lane_label(WindowData *win_data, LaneId lane, char *buffer, size_t size) {
@@ -534,7 +585,11 @@ void render_window(ApplicationData *app_data, WindowData *win_data) {
             wattron(win_data->win, A_BOLD);
         }
 
-        mvwprintw(win_data->win, 0, 1, "%s", win_data->filename);
+        /* Keep the name left of the vertical bar, where the cycle labels
+         * start, and inside the panel border. */
+        uint64_t limit = app_data->config.bar_offset;
+        if (limit > win_data->width - 1) limit = win_data->width - 1;
+        print_truncated(win_data->win, 0, 1, win_data->filename, (int) limit - 1);
 
         if (win_data->index == app_data->window_focused) {
             wattroff(win_data->win, A_BOLD);

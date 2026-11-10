@@ -63,7 +63,8 @@ After configuring a build directory, run `make check`. The suite includes:
 - C tests for command parsing/dispatch, numeric arguments, configuration files,
   autocomplete, file loading and multi-source trace attachment.
 - Headless ncurses tests that inspect actual window cells, exercise panel
-  lifecycle, searching, keyboard input, lane rendering and terminal resizing.
+  lifecycle, searching, keyboard input, lane rendering, panel titles and
+  terminal resizing.
 - Deterministic property tests: 10,000 numeric round trips, 10,000 randomized
   tokenization/completion cases, and 3,000 timeline operations checked against
   an independent sorted-array model.
@@ -113,8 +114,8 @@ python3 ../tests/check_coverage.py .
 `make distcheck` also verifies the distributed sources, out-of-tree builds,
 tests and installation/uninstallation.
 
-Local GCC coverage verification exercises all 75 implemented functions and
-all 1,208 executable source lines (100%). The normal CI job checks this target
+Local GCC coverage verification exercises all 79 implemented functions and
+all 1,230 executable source lines (100%). The normal CI job checks this target
 with `tests/check_coverage.py`; a newly uncovered line or function fails it.
 The coverage checker requires Python 3 and a GCC/gcov version supporting JSON
 output. Line coverage does not imply 100% branch coverage or every possible

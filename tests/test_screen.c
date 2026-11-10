@@ -1,3 +1,5 @@
+#include <locale.h>
+
 #include "test.h"
 #include "window.h"
 #include "interact.h"
@@ -312,6 +314,72 @@ static void rendering_and_navigation_edges(void) {
     cleanup_app(&app);
 }
 
+static void title(WindowData *win, char *text, int length) {
+    CHECK(mvwinnstr(win->win, 0, 1, text, length) != ERR);
+}
+
+static void long_file_names(void) {
+    ApplicationData app = {.config = {.bar_offset = 32, .stage_width = 3,
+                                       .show_empty_rows = false}, .error = NO_ERROR};
+    new_window(&app);
+    WindowData *win = app.windows[0];
+    populate(win);
+    char text[128];
+
+    /* Short names are printed as they are. */
+    win->filename = strdup("short.log");
+    render_window(&app, win);
+    title(win, text, 9);
+    CHECK(strcmp(text, "short.log") == 0);
+
+    /* Long names are shortened in the middle to end before the vertical bar,
+     * keeping the cycle label next to it intact. */
+    free(win->filename);
+    win->filename = strdup("sargantana_vector_benchmark_matmul_run_2026_11_05_konata_core0.kanata");
+    render_window(&app, win);
+    title(win, text, 31);
+    CHECK(strcmp(text, "sargantana_vec...a_core0.kanata") == 0);
+    CHECK(cell(win, 0, 33) == 'v');
+
+    /* Too narrow for an ellipsis: plain cut. */
+    app.config.bar_offset = 3;
+    render_window(&app, win);
+    title(win, text, 2);
+    CHECK(strcmp(text, "sa") == 0);
+    CHECK(cell(win, 0, 4) == 'v');
+
+    /* No room at all: nothing is printed over the border. */
+    app.config.bar_offset = 0;
+    render_window(&app, win);
+    CHECK(cell(win, 0, 1) != 's');
+
+    /* A bar past the panel edge limits the name to the panel width. */
+    app.config.bar_offset = 500;
+    free(win->filename);
+    win->filename = malloc(201);
+    CHECK(win->filename != NULL);
+    memset(win->filename, 'x', 200);
+    win->filename[0] = 'a';
+    win->filename[199] = 'z';
+    win->filename[200] = '\0';
+    render_window(&app, win);
+    title(win, text, 60);
+    CHECK(text[0] == 'a' && strstr(text, "...") != NULL);
+
+    /* In a UTF-8 locale, bytes that are not valid characters count one
+     * column each and the name still ends before the bar. */
+    CHECK(setlocale(LC_CTYPE, "C.UTF-8") != NULL);
+    app.config.bar_offset = 12;
+    free(win->filename);
+    win->filename = strdup("ab\xff\xfe" "cdefghijklmnop");
+    render_window(&app, win);
+    title(win, text, 2);
+    CHECK(strcmp(text, "ab") == 0);
+    CHECK(cell(win, 0, 13) == 'v');
+    CHECK(setlocale(LC_CTYPE, "C") != NULL);
+    cleanup_app(&app);
+}
+
 int main(void) {
     begin_screen();
     RUN(panel_lifecycle);
@@ -319,6 +387,7 @@ int main(void) {
     RUN(searches_and_trace_commands);
     RUN(rendering_and_resize);
     RUN(rendering_and_navigation_edges);
+    RUN(long_file_names);
     endwin();
     delscreen(screen);
     CHECK(fclose(input) == 0 && fclose(output) == 0);
